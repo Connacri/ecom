@@ -1,0 +1,558 @@
+{
+  "pays": [
+    {
+      "nom": "États-Unis / Canada",
+      "iso": "US",
+      "prefixes": ["000-019"]
+    },
+    {
+      "nom": "États-Unis",
+      "iso": "US",
+      "prefixes": ["030-039"]
+    },
+    {
+      "nom": "France",
+      "iso": "FR",
+      "prefixes": ["300-379"]
+    },
+    {
+      "nom": "Bulgarie",
+      "iso": "BG",
+      "prefixes": ["380"]
+    },
+    {
+      "nom": "Slovénie",
+      "iso": "SI",
+      "prefixes": ["383"]
+    },
+    {
+      "nom": "Croatie",
+      "iso": "HR",
+      "prefixes": ["385"]
+    },
+    {
+      "nom": "Bosnie-Herzégovine",
+      "iso": "BA",
+      "prefixes": ["387"]
+    },
+    {
+      "nom": "Allemagne",
+      "iso": "DE",
+      "prefixes": ["400-440"]
+    },
+    {
+      "nom": "Japon",
+      "iso": "JP",
+      "prefixes": ["450-459"]
+    },
+    {
+      "nom": "Russie",
+      "iso": "RU",
+      "prefixes": ["460-469"]
+    },
+    {
+      "nom": "Kirghizistan",
+      "iso": "KG",
+      "prefixes": ["470"]
+    },
+    {
+      "nom": "Taïwan",
+      "iso": "TW",
+      "prefixes": ["471"]
+    },
+    {
+      "nom": "Estonie",
+      "iso": "EE",
+      "prefixes": ["474"]
+    },
+    {
+      "nom": "Lettonie",
+      "iso": "LV",
+      "prefixes": ["475"]
+    },
+    {
+      "nom": "Azerbaïdjan",
+      "iso": "AZ",
+      "prefixes": ["476"]
+    },
+    {
+      "nom": "Lituanie",
+      "iso": "LT",
+      "prefixes": ["477"]
+    },
+    {
+      "nom": "Ouzbékistan",
+      "iso": "UZ",
+      "prefixes": ["478"]
+    },
+    {
+      "nom": "Sri Lanka",
+      "iso": "LK",
+      "prefixes": ["479"]
+    },
+    {
+      "nom": "Philippines",
+      "iso": "PH",
+      "prefixes": ["480"]
+    },
+    {
+      "nom": "Biélorussie",
+      "iso": "BY",
+      "prefixes": ["481"]
+    },
+    {
+      "nom": "Ukraine",
+      "iso": "UA",
+      "prefixes": ["482"]
+    },
+    {
+      "nom": "Moldavie",
+      "iso": "MD",
+      "prefixes": ["484"]
+    },
+    {
+      "nom": "Arménie",
+      "iso": "AM",
+      "prefixes": ["485"]
+    },
+    {
+      "nom": "Géorgie",
+      "iso": "GE",
+      "prefixes": ["486"]
+    },
+    {
+      "nom": "Kazakhstan",
+      "iso": "KZ",
+      "prefixes": ["487"]
+    },
+    {
+      "nom": "Hong Kong",
+      "iso": "HK",
+      "prefixes": ["489"]
+    },
+    {
+      "nom": "Royaume-Uni",
+      "iso": "GB",
+      "prefixes": ["500-509"]
+    },
+    {
+      "nom": "Grèce",
+      "iso": "GR",
+      "prefixes": ["520"]
+    },
+    {
+      "nom": "Liban",
+      "iso": "LB",
+      "prefixes": ["528"]
+    },
+    {
+      "nom": "Chypre",
+      "iso": "CY",
+      "prefixes": ["529"]
+    },
+    {
+      "nom": "Macédoine du Nord",
+      "iso": "MK",
+      "prefixes": ["531"]
+    },
+    {
+      "nom": "Malte",
+      "iso": "MT",
+      "prefixes": ["535"]
+    },
+    {
+      "nom": "Irlande",
+      "iso": "IE",
+      "prefixes": ["539"]
+    },
+    {
+      "nom": "Belgique / Luxembourg",
+      "iso": "BE",
+      "prefixes": ["540-549"]
+    },
+    {
+      "nom": "Portugal",
+      "iso": "PT",
+      "prefixes": ["560"]
+    },
+    {
+      "nom": "Islande",
+      "iso": "IS",
+      "prefixes": ["569"]
+    },
+    {
+      "nom": "Danemark",
+      "iso": "DK",
+      "prefixes": ["570-579"]
+    },
+    {
+      "nom": "Pologne",
+      "iso": "PL",
+      "prefixes": ["590"]
+    },
+    {
+      "nom": "Roumanie",
+      "iso": "RO",
+      "prefixes": ["594"]
+    },
+    {
+      "nom": "Hongrie",
+      "iso": "HU",
+      "prefixes": ["599"]
+    },
+    {
+      "nom": "Afrique du Sud",
+      "iso": "ZA",
+      "prefixes": ["600-601"]
+    },
+    {
+      "nom": "Ghana",
+      "iso": "GH",
+      "prefixes": ["603"]
+    },
+    {
+      "nom": "Sénégal",
+      "iso": "SN",
+      "prefixes": ["604"]
+    },
+    {
+      "nom": "Bahreïn",
+      "iso": "BH",
+      "prefixes": ["608"]
+    },
+    {
+      "nom": "Île Maurice",
+      "iso": "MU",
+      "prefixes": ["609"]
+    },
+    {
+      "nom": "Maroc",
+      "iso": "MA",
+      "prefixes": ["611"]
+    },
+    {
+      "nom": "Algérie",
+      "iso": "DZ",
+      "prefixes": ["613", "1613"]
+    },
+    {
+      "nom": "Nigeria",
+      "iso": "NG",
+      "prefixes": ["615"]
+    },
+    {
+      "nom": "Kenya",
+      "iso": "KE",
+      "prefixes": ["616"]
+    },
+    {
+      "nom": "Côte d'Ivoire",
+      "iso": "CI",
+      "prefixes": ["618"]
+    },
+    {
+      "nom": "Tunisie",
+      "iso": "TN",
+      "prefixes": ["619"]
+    },
+    {
+      "nom": "Tanzanie",
+      "iso": "TZ",
+      "prefixes": ["620"]
+    },
+    {
+      "nom": "Syrie",
+      "iso": "SY",
+      "prefixes": ["621"]
+    },
+    {
+      "nom": "Égypte",
+      "iso": "EG",
+      "prefixes": ["622"]
+    },
+    {
+      "nom": "Brunei",
+      "iso": "BN",
+      "prefixes": ["623"]
+    },
+    {
+      "nom": "Libye",
+      "iso": "LY",
+      "prefixes": ["624"]
+    },
+    {
+      "nom": "Jordanie",
+      "iso": "JO",
+      "prefixes": ["625"]
+    },
+    {
+      "nom": "Iran",
+      "iso": "IR",
+      "prefixes": ["626"]
+    },
+    {
+      "nom": "Koweït",
+      "iso": "KW",
+      "prefixes": ["627"]
+    },
+    {
+      "nom": "Arabie Saoudite",
+      "iso": "SA",
+      "prefixes": ["628"]
+    },
+    {
+      "nom": "Émirats arabes unis",
+      "iso": "AE",
+      "prefixes": ["629"]
+    },
+    {
+      "nom": "Finlande",
+      "iso": "FI",
+      "prefixes": ["640-649"]
+    },
+    {
+      "nom": "Chine",
+      "iso": "CN",
+      "prefixes": ["690-699"]
+    },
+    {
+      "nom": "Norvège",
+      "iso": "NO",
+      "prefixes": ["700-709"]
+    },
+    {
+      "nom": "Israël",
+      "iso": "IL",
+      "prefixes": ["729"]
+    },
+    {
+      "nom": "Suède",
+      "iso": "SE",
+      "prefixes": ["730-739"]
+    },
+    {
+      "nom": "Guatemala",
+      "iso": "GT",
+      "prefixes": ["740"]
+    },
+    {
+      "nom": "El Salvador",
+      "iso": "SV",
+      "prefixes": ["741"]
+    },
+    {
+      "nom": "Honduras",
+      "iso": "HN",
+      "prefixes": ["742"]
+    },
+    {
+      "nom": "Nicaragua",
+      "iso": "NI",
+      "prefixes": ["743"]
+    },
+    {
+      "nom": "Costa Rica",
+      "iso": "CR",
+      "prefixes": ["744"]
+    },
+    {
+      "nom": "Panama",
+      "iso": "PA",
+      "prefixes": ["745"]
+    },
+    {
+      "nom": "République dominicaine",
+      "iso": "DO",
+      "prefixes": ["746"]
+    },
+    {
+      "nom": "Mexique",
+      "iso": "MX",
+      "prefixes": ["750"]
+    },
+    {
+      "nom": "Canada",
+      "iso": "CA",
+      "prefixes": ["754-755"]
+    },
+    {
+      "nom": "Venezuela",
+      "iso": "VE",
+      "prefixes": ["759"]
+    },
+    {
+      "nom": "Suisse",
+      "iso": "CH",
+      "prefixes": ["760-769"]
+    },
+    {
+      "nom": "Colombie",
+      "iso": "CO",
+      "prefixes": ["770-771"]
+    },
+    {
+      "nom": "Uruguay",
+      "iso": "UY",
+      "prefixes": ["773"]
+    },
+    {
+      "nom": "Pérou",
+      "iso": "PE",
+      "prefixes": ["775"]
+    },
+    {
+      "nom": "Bolivie",
+      "iso": "BO",
+      "prefixes": ["777"]
+    },
+    {
+      "nom": "Argentine",
+      "iso": "AR",
+      "prefixes": ["779"]
+    },
+    {
+      "nom": "Chili",
+      "iso": "CL",
+      "prefixes": ["780"]
+    },
+    {
+      "nom": "Paraguay",
+      "iso": "PY",
+      "prefixes": ["784"]
+    },
+    {
+      "nom": "Équateur",
+      "iso": "EC",
+      "prefixes": ["786"]
+    },
+    {
+      "nom": "Brésil",
+      "iso": "BR",
+      "prefixes": ["789-790"]
+    },
+    {
+      "nom": "Italie",
+      "iso": "IT",
+      "prefixes": ["800-839"]
+    },
+    {
+      "nom": "Espagne",
+      "iso": "ES",
+      "prefixes": ["840-849"]
+    },
+    {
+      "nom": "Cuba",
+      "iso": "CU",
+      "prefixes": ["850"]
+    },
+    {
+      "nom": "Slovaquie",
+      "iso": "SK",
+      "prefixes": ["858"]
+    },
+    {
+      "nom": "République tchèque",
+      "iso": "CZ",
+      "prefixes": ["859"]
+    },
+    {
+      "nom": "Serbie",
+      "iso": "RS",
+      "prefixes": ["860"]
+    },
+    {
+      "nom": "Mongolie",
+      "iso": "MN",
+      "prefixes": ["865"]
+    },
+    {
+      "nom": "Corée du Nord",
+      "iso": "KP",
+      "prefixes": ["867"]
+    },
+    {
+      "nom": "Turquie",
+      "iso": "TR",
+      "prefixes": ["868-869"]
+    },
+    {
+      "nom": "Pays-Bas",
+      "iso": "NL",
+      "prefixes": ["870-879"]
+    },
+    {
+      "nom": "Corée du Sud",
+      "iso": "KR",
+      "prefixes": ["880"]
+    },
+    {
+      "nom": "Thaïlande",
+      "iso": "TH",
+      "prefixes": ["885"]
+    },
+    {
+      "nom": "Singapour",
+      "iso": "SG",
+      "prefixes": ["888"]
+    },
+    {
+      "nom": "Inde",
+      "iso": "IN",
+      "prefixes": ["890"]
+    },
+    {
+      "nom": "Vietnam",
+      "iso": "VN",
+      "prefixes": ["893"]
+    },
+    {
+      "nom": "Pakistan",
+      "iso": "PK",
+      "prefixes": ["896"]
+    },
+    {
+      "nom": "Indonésie",
+      "iso": "ID",
+      "prefixes": ["899"]
+    },
+    {
+      "nom": "Autriche",
+      "iso": "AT",
+      "prefixes": ["900-919"]
+    },
+    {
+      "nom": "Australie",
+      "iso": "AU",
+      "prefixes": ["930-939"]
+    },
+    {
+      "nom": "Nouvelle-Zélande",
+      "iso": "NZ",
+      "prefixes": ["940-949"]
+    },
+    {
+      "nom": "Malaisie",
+      "iso": "MY",
+      "prefixes": ["955"]
+    },
+    {
+      "nom": "Macédoine",
+      "iso": "MK",
+      "prefixes": ["531"]
+    },
+    {
+      "nom": "Botswana",
+      "iso": "BW",
+      "prefixes": ["750"]
+    },
+    {
+      "nom": "Libéria",
+      "iso": "LR",
+      "prefixes": ["457"]
+    }
+  ]
+}
+
+
+
+

@@ -1,0 +1,152 @@
+name: ecom
+description: "A new Market project."
+# The following line prevents the package from being accidentally published to
+# pub.dev using `flutter pub publish`. This is preferred for private packages.
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.7.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cloud_firestore: ^5.6.6
+  firebase_messaging: ^15.2.5
+  firebase_database: ^11.3.5
+  firebase_core: ^3.13.0
+  firebase_auth: ^5.5.2
+  firebase_storage: any
+  firebase_in_app_messaging: ^0.8.1+5
+  firebase_analytics: any
+  google_sign_in: ^6.3.0
+  cached_network_image: ^3.4.1
+  supabase_flutter: ^2.8.4
+  lottie: ^3.3.1
+  provider: ^6.1.4
+  font_awesome_flutter: ^10.8.0
+  shared_preferences: ^2.5.3
+  avatar_glow: ^3.0.1
+  url_launcher: ^6.3.1
+  intl: ^0.19.0
+  shimmer: ^3.0.0
+  geocoding: ^3.0.0
+  map_launcher: ^3.5.0
+  path: ^1.9.1
+  http: ^1.3.0
+  timeago: ^3.7.0
+  google_mobile_ads: ^6.0.0
+  permission_handler: ^12.0.0+1
+  call_log: ^5.0.5
+  # The following adds the Cupertino Icons font to your application.
+  # Use with the CupertinoIcons class for iOS style icons.
+  cupertino_icons: ^1.0.8
+  rename: ^3.0.2
+  animated_text_kit: ^4.2.3
+  pretty_animated_text: ^2.0.0
+  flutter_localization: ^0.3.2
+  feedback: ^3.1.0
+  flutter_email_sender: ^7.0.0
+#  geolocator: ^14.0.0
+  image_picker: ^1.1.2
+  firebase_app_check: ^0.3.2+5
+  faker: ^2.2.0
+  icons_plus: ^5.0.0
+  infinite_scroll_pagination: ^5.0.0
+
+
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_launcher_icons: ^0.14.3
+  build_runner: ^2.4.15
+  flutter_native_splash: ^2.4.6
+
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/icon/icon.png"
+  #  image_path: "assets/images/ic_launcher/1024.png"
+  min_sdk_android: 21 # android min sdk min:16, default 21
+  web:
+    generate: true
+    image_path: "assets/icon/icon.png"
+    #    image_path: "assets/images/ic_launcher/1024.png"
+    adaptive_icon_foreground: "assets/icon/icon.png"
+    background_color: "#hexcode"
+    theme_color: "#hexcode"
+  windows:
+    generate: true
+    image_path: "assets/icon/icon.png"
+    icon_size: 48 # min:48, max:256, default: 48
+  macos:
+    generate: true
+    image_path: "assets/icon/icon.png"
+
+flutter_native_splash:
+  # Configuration Android
+  android: true
+  background_image: assets/splash.png
+  android_12:
+    image: assets/splash.png
+    icon_background_color: "#ffffff"
+
+
+  # Configuration iOS
+  ios: true
+  image: assets/splash.png
+  color: "#ffffff"
+
+flutter:
+
+  uses-material-design: true
+
+
+
+  fonts:
+    - family: Oswald
+      fonts:
+        - asset: assets/fonts/Oswald-Bold.ttf
+        - asset: assets/fonts/Oswald-ExtraLight.ttf
+        - asset: assets/fonts/Oswald-SemiBold.ttf
+        - asset: assets/fonts/Oswald-Regular.ttf
+        - asset: assets/fonts/Oswald-Light.ttf
+        - asset: assets/fonts/Oswald-Medium.ttf
+    - family: ArbFONTS
+      fonts:
+        - asset: assets/fonts/ArbFONTS-khalaad-al-arabeh.ttf
+        - asset: assets/fonts/ArbFONTS-Al-Jazeera-Arabic-Bold.ttf
+        - asset: assets/fonts/ArbFONTS-Al-Jazeera-Arabic-Bold-1.ttf
+        - asset: assets/fonts/ArbFONTS-Al-Jazeera-Arabic-Light.ttf
+        - asset: assets/fonts/ArbFONTS-Al-Jazeera-Arabic-Regular.ttf
+        - asset: assets/fonts/NizarBBCKurdish-Bold.ttf
+    - family: BBC
+      fonts:
+        - asset: assets/fonts/NizarBBCKurdish-Bold.ttf
+
+    - family: KHALED
+      fonts:
+        - asset: assets/fonts/ArbFONTS-Al-Jazeera-Arabic-Bold.ttf
+
+
+  assets:
+    - assets/
+    - assets/lotties/
+    - assets/images/banner.png
+    - assets/images/icon.png
+    - assets/firebase_logo.png
+    - assets/google_logo.png
+    - assets/logos/
+    - assets/icon/icon.png
+    - assets/logos/djezzy.png
+    - assets/logos/inconnu.png
+    - assets/logos/mobilis.png
+    - assets/logos/ooredoo.png
+
+    - assets/logos/logoo.png
+    - assets/flags/
+    - assets/i18n/
+
+

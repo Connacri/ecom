@@ -1,0 +1,114 @@
+{
+  "project_info": {
+    "project_number": "330293988254",
+    "firebase_url": "https://walletdz-d12e0-default-rtdb.firebaseio.com",
+    "project_id": "walletdz-d12e0",
+    "storage_bucket": "walletdz-d12e0.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:330293988254:android:0562d6c8bd50fd4141648f",
+        "android_client_info": {
+          "package_name": "com.wallet.dz"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "330293988254-4gm9qm0rjcvrbf6c6gna97snb15da227.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.wallet.dz",
+            "certificate_hash": "de4d1da0319db15744ed425655637105a594a920"
+          }
+        },
+        {
+          "client_id": "330293988254-5p93m05gsefgb03j1mrkjrup8ul6nk84.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.wallet.dz",
+            "certificate_hash": "503bca0e7d9cf11193b8a34339154f33bc34aace"
+          }
+        },
+        {
+          "client_id": "330293988254-hhvehmft7k53d74vjpavnpiju0ickb87.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.wallet.dz",
+            "certificate_hash": "dec232c0ea913c5c17b91e274c0a2c1e5d1a023a"
+          }
+        },
+        {
+          "client_id": "330293988254-c3b9hgmt0hat5jfqi69j4jkn3pe6fhkv.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBeLnEzq0iSZjfx0R-pgu6cs89Ooyfozq0"
+        },
+        {
+          "current_key": "AIzaSyD8Dd2G-Lsj9_N6LWkjRqRBCdHd-XpFqjI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "330293988254-c3b9hgmt0hat5jfqi69j4jkn3pe6fhkv.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "330293988254-16ue4vkvkkfsumfig7bf4qoj9aq51utr.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.wallet.dz.untitled"
+              }
+            }
+          ]
+        }
+      },
+      "admob_app_id": "ca-app-pub-2282149611905342~2642720021"
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:330293988254:android:dd64cc3f7e0383c041648f",
+        "android_client_info": {
+          "package_name": "com.wallet.dz.ecom"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "330293988254-c3b9hgmt0hat5jfqi69j4jkn3pe6fhkv.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBeLnEzq0iSZjfx0R-pgu6cs89Ooyfozq0"
+        },
+        {
+          "current_key": "AIzaSyD8Dd2G-Lsj9_N6LWkjRqRBCdHd-XpFqjI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "330293988254-c3b9hgmt0hat5jfqi69j4jkn3pe6fhkv.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "330293988254-16ue4vkvkkfsumfig7bf4qoj9aq51utr.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.wallet.dz.untitled"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
