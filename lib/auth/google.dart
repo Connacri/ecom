@@ -1,9 +1,11 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecom/activities/HomeScreen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:lottie/lottie.dart';
 
+import '../activities/modèles.dart';
 import '../fonctions/AppLocalizations.dart';
 import '../pages/MyApp.dart';
 import 'AuthProvider.dart';
@@ -22,7 +24,7 @@ class _googleState extends State<google> {
   int currentPage = 0;
   final int pageSize = 10; // Nombre de résultats par page
   bool isSigningOut = false;
-
+  String? roleChoice;
   @override
   void initState() {
     super.initState();
@@ -30,18 +32,69 @@ class _googleState extends State<google> {
     _setupAuthListener();
   }
 
-  Future<void> _handleSignIn() async {
+  // Future<void> _handleSignIn() async {
+  //   setState(() => isLoading = true);
+  //
+  //   try {
+  //     User? user = await _authService.signInWithGoogle();
+  //     if (user != null) {
+  //       if (!mounted) return;
+  //
+  //       Navigator.pushReplacement(
+  //         // Force le rafraîchissement
+  //         context,
+  //         MaterialPageRoute(builder: (ctx) => HomeScreenAct()),
+  //       );
+  //     }
+  //   } finally {
+  //     setState(() => isLoading = false);
+  //   }
+  // }
+  Future<void> _handleSignIn(String role) async {
     setState(() => isLoading = true);
 
     try {
       User? user = await _authService.signInWithGoogle();
+
       if (user != null) {
+        final uid = user.uid;
+
+        final docRef = FirebaseFirestore.instance
+            .collection('userModel')
+            .doc(uid);
+        final docSnapshot = await docRef.get();
+
+        if (!docSnapshot.exists) {
+          final newUser = UserModel(
+            id: uid,
+            name: user.displayName ?? '',
+            phone: '', // à remplir via formulaire plus tard si besoin
+            email: user.email ?? '',
+            gender: '',
+            childrenIds: [],
+            createdAt: DateTime.now(),
+            lastLogin: DateTime.now(),
+            editedAt: DateTime.now(),
+            role: role,
+            photos: [],
+          );
+
+          await docRef.set({
+            ...newUser.toMap(),
+            'createdAt': FieldValue.serverTimestamp(),
+            'lastLogin': FieldValue.serverTimestamp(),
+          });
+        } else {
+          await docRef.update({'lastLogin': FieldValue.serverTimestamp()});
+        }
+
         Navigator.pushReplacement(
-          // Force le rafraîchissement
           context,
           MaterialPageRoute(builder: (ctx) => HomeScreenAct()),
         );
       }
+    } catch (e) {
+      print("Erreur authentification : $e");
     } finally {
       setState(() => isLoading = false);
     }
@@ -56,6 +109,8 @@ class _googleState extends State<google> {
         _authService.signOut(),
         Future.delayed(const Duration(seconds: 2)), // 👈 délai imposé
       ]);
+      if (!mounted) return;
+
       Navigator.of(
         context,
       ).pushReplacement(MaterialPageRoute(builder: (ctx) => MyApp()));
@@ -105,24 +160,23 @@ class _googleState extends State<google> {
             ),
 
             AppLocalizations.of(context).locale.languageCode != 'ar'
-                ? Expanded(
+                ? Flexible(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(18, 0, 18, 0),
 
                     child: Text(
-                      '${AppLocalizations.of(context).translate('usingGoogleToReport')}'
+                      'En Utilisant votre compte google tu porra t\'authentifier\n\nqui je suis ?!'
                           .toUpperCase(),
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         color: Colors.black45,
                         fontSize: 20,
                         fontWeight: FontWeight.w500,
-                        fontFamily: 'Oswald',
                       ),
                     ),
                   ),
                 )
-                : Expanded(
+                : Flexible(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(18, 18, 18, 0),
                     child: Text(
@@ -138,7 +192,17 @@ class _googleState extends State<google> {
                     ),
                   ),
                 ),
-            const SizedBox(height: 20),
+
+            RoleSelectionDropdown(
+              onRoleSelected: (role) {
+                setState(() {
+                  roleChoice = role;
+                });
+                print('choicerole : $roleChoice');
+                print('role $role');
+              },
+            ),
+            Spacer(),
             ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.black54,
@@ -153,9 +217,10 @@ class _googleState extends State<google> {
                 'Google',
                 style: TextStyle(fontSize: 24, color: Colors.white),
               ),
-              onPressed: _handleSignIn,
+              onPressed:
+                  roleChoice != null ? () => _handleSignIn(roleChoice!) : null,
             ),
-            Spacer(),
+            SizedBox(height: 70),
           ],
         ),
       ),
@@ -297,7 +362,7 @@ class _googleState extends State<google> {
     required String content,
     required VoidCallback onConfirm,
   }) async {
-    return showDialog(
+    await showDialog(
       context: context,
       builder:
           (ctx) => AlertDialog(
@@ -305,24 +370,90 @@ class _googleState extends State<google> {
             content: Text(content),
             actions: [
               TextButton(
-                child: Text(
-                  '${AppLocalizations.of(context).translate('annuler')}',
-                ),
+                child: Text(AppLocalizations.of(context).translate('cancel')),
                 onPressed: () => Navigator.of(ctx).pop(),
               ),
-              ElevatedButton(
-                child: Text(
-                  '${AppLocalizations.of(context).translate('delete')}',
-                  style: TextStyle(color: Colors.white),
-                ),
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              TextButton(
+                child: Text(AppLocalizations.of(context).translate('confirm')),
                 onPressed: () {
-                  Navigator.of(ctx).pop(); // Ferme la boîte de dialogue
-                  onConfirm(); // Appelle la fonction de suppression
+                  Navigator.of(ctx).pop();
+                  onConfirm();
                 },
               ),
             ],
           ),
+    );
+  }
+}
+
+class RoleSelectionDropdown extends StatefulWidget {
+  final Function(String) onRoleSelected;
+
+  const RoleSelectionDropdown({Key? key, required this.onRoleSelected})
+    : super(key: key);
+
+  @override
+  _RoleSelectionDropdownState createState() => _RoleSelectionDropdownState();
+}
+
+class _RoleSelectionDropdownState extends State<RoleSelectionDropdown> {
+  String? roleChoice;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
+      child: DropdownButton<String>(
+        value: roleChoice,
+        dropdownColor: Theme.of(context).scaffoldBackgroundColor,
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+          color: Theme.of(context).textTheme.bodyMedium?.color,
+        ),
+        hint: FittedBox(
+          child: Text(
+            'Sélectionnez mon rôle',
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+              color: Theme.of(context).hintColor,
+            ),
+          ),
+        ),
+        icon: Icon(
+          Icons.keyboard_arrow_down,
+          color: Theme.of(context).iconTheme.color,
+        ),
+
+        iconSize: 24,
+        elevation: 4,
+        borderRadius: BorderRadius.circular(12),
+
+        underline: Container(
+          height: 0, // Supprime la ligne par défaut
+        ),
+        isExpanded: true,
+        menuMaxHeight: 300,
+
+        items:
+            lesRoles.map<DropdownMenuItem<String>>((String value) {
+              return DropdownMenuItem<String>(
+                value: value,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  child: Text(
+                    value.toUpperCase(),
+                    style: TextStyle(color: Colors.grey[800], fontSize: 15),
+                  ),
+                ),
+              );
+            }).toList(),
+        onChanged: (String? newValue) {
+          setState(() {
+            roleChoice = newValue;
+          });
+          if (newValue != null) {
+            widget.onRoleSelected(newValue); // Cette ligne manquait
+          }
+        },
+      ),
     );
   }
 }

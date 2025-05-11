@@ -14,14 +14,14 @@ class DataPopulator {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final CollectionReference clubs;
   final CollectionReference children;
-  final CollectionReference parents;
+  final CollectionReference users;
   final CollectionReference courses;
   final CollectionReference profs;
 
   DataPopulator()
     : clubs = FirebaseFirestore.instance.collection('clubs'),
       children = FirebaseFirestore.instance.collection('children'),
-      parents = FirebaseFirestore.instance.collection('parents'),
+      users = FirebaseFirestore.instance.collection('userModel'),
       courses = FirebaseFirestore.instance.collection('courses'),
       profs = FirebaseFirestore.instance.collection('profs');
 
@@ -192,8 +192,11 @@ class DataPopulator {
         faker.randomGenerator.integer(3, min: 1),
         shuffledChildIds.length,
       );
+
+      final randomRole = (lesRoles.toList()..shuffle()).first;
       final parentChildren = shuffledChildIds.take(childrenPerParent).toList();
       final gender = Random().nextBool() ? 'male' : 'female';
+      final role = Random().nextBool() ? 'male' : 'female';
       final phone = faker.phoneNumber.random.toString();
       shuffledChildIds.removeRange(0, childrenPerParent);
 
@@ -210,9 +213,14 @@ class DataPopulator {
         childrenIds: parentChildren,
         gender: gender,
         phone: phone,
+        createdAt: faker.date.dateTime(minYear: 2024, maxYear: 2024),
+        lastLogin: DateTime.now(),
+        editedAt: faker.date.dateTime(minYear: 2025, maxYear: 2025),
+        role: randomRole,
+        photos: [],
       );
 
-      await parents.doc(parentId).set(parent.toMap());
+      await users.doc(parentId).set(parent.toMap());
     }
   }
 
@@ -317,15 +325,13 @@ extension StringExtension on String {
 class DataPopulatorClaude {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final CollectionReference clubs;
-  final CollectionReference children;
   final CollectionReference parents;
   final CollectionReference courses;
   final CollectionReference profs;
 
   DataPopulatorClaude()
     : clubs = FirebaseFirestore.instance.collection('clubs'),
-      children = FirebaseFirestore.instance.collection('children'),
-      parents = FirebaseFirestore.instance.collection('parents'),
+      parents = FirebaseFirestore.instance.collection('userModel'),
       courses = FirebaseFirestore.instance.collection('courses'),
       profs = FirebaseFirestore.instance.collection('profs');
 
@@ -357,9 +363,8 @@ class DataPopulatorClaude {
     final List<Prof> allProfs = await _generateProfs(8);
     final List<Club> allClubs = await _generateClubs(4);
     final List<Course> allCourses = await _generateCourses(allClubs, allProfs);
-    final List<String> childIds = await _generateChildren(23);
-    await _assignChildrenToCourses(childIds, allCourses);
-    await _generateParents(12, childIds);
+    await _generateParents(12); // Génère les parents et leurs enfants
+    await _assignChildrenToCourses(allCourses);
 
     print("✅ Peuplement terminé avec succès !");
   }
@@ -420,7 +425,6 @@ class DataPopulatorClaude {
     print("📚 Génération des cours pour ${allClubs.length} clubs...");
     final List<Course> allCourses = [];
 
-    // Ensure each club has at least 2 courses
     for (final club in allClubs) {
       final courseCount = faker.randomGenerator.integer(5, min: 2);
       final List<String> courseIds = [];
@@ -431,7 +435,6 @@ class DataPopulatorClaude {
         courseIds.add(course.id);
       }
 
-      // Update the club with its courses
       await clubs.doc(club.id).update({'courses': courseIds});
     }
 
@@ -474,7 +477,6 @@ class DataPopulatorClaude {
       );
     }
 
-    // Ensure each course has at least 1 professor
     final profCount = faker.randomGenerator.integer(3, min: 1);
     final List<String> profIds =
         (List<Prof>.from(profPool)
@@ -494,164 +496,109 @@ class DataPopulatorClaude {
     return course;
   }
 
-  Future<void> _generateParents(int count, List<String> childIds) async {
+  Future<void> _generateParents(int count) async {
     print("👨‍👩‍👧‍👦 Génération de $count parents...");
-    final List<String> remainingChildIds = List<String>.from(childIds);
-    remainingChildIds.shuffle();
 
     for (int i = 1; i <= count; i++) {
-      if (remainingChildIds.isEmpty) break;
-
       final parentId = uuid.v4();
       final name = "${faker.person.firstName()} ${faker.person.lastName()}";
       final email = faker.internet.email();
-      final childrenPerParent = min(
-        faker.randomGenerator.integer(3, min: 1),
-        remainingChildIds.length,
-      );
-      final parentChildren = remainingChildIds.take(childrenPerParent).toList();
+      final childrenCount = faker.randomGenerator.integer(3, min: 1);
       final gender = Random().nextBool() ? 'male' : 'female';
       final phone = faker.phoneNumber.us();
+      final randomRole = _getRandomRole();
 
-      remainingChildIds.removeRange(0, childrenPerParent);
+      // Générer les enfants pour ce parent (sous-collection)
+      final List<String> childrenIds = [];
+      for (int j = 0; j < childrenCount; j++) {
+        final childId = uuid.v4();
+        final childName =
+            "${faker.person.firstName()} ${faker.person.lastName()}";
+        final age = faker.randomGenerator.integer(13, min: 3);
+        final childGender = Random().nextBool() ? 'male' : 'female';
 
-      final batch = _firestore.batch();
-      for (final childId in parentChildren) {
-        batch.update(children.doc(childId), {'parentId': parentId});
+        final child = Child(
+          id: childId,
+          name: childName,
+          age: age,
+          enrolledCourses: [],
+          gender: childGender,
+          parentId: parentId,
+        );
+
+        // Ajouter l'enfant à la sous-collection du parent
+        await parents
+            .doc(parentId)
+            .collection('children')
+            .doc(childId)
+            .set(child.toMap());
+        childrenIds.add(childId);
       }
-      await batch.commit();
 
+      // Créer le parent avec la liste des IDs des enfants
       final parent = UserModel(
         id: parentId,
         name: name,
         email: email,
-        childrenIds: parentChildren,
+        childrenIds: childrenIds,
         gender: gender,
         phone: phone,
+        createdAt: DateTime.now(),
+        lastLogin: DateTime.now(),
+        editedAt: DateTime.now(),
+        role: randomRole,
+        photos: [],
       );
 
       await parents.doc(parentId).set(parent.toMap());
     }
   }
 
-  Future<List<String>> _generateChildren(int count) async {
-    print("👶 Génération de $count enfants...");
-    final List<String> childIds = [];
-
-    for (int i = 1; i <= count; i++) {
-      final childId = uuid.v4();
-      final name = "${faker.person.firstName()} ${faker.person.lastName()}";
-      final age = faker.randomGenerator.integer(13, min: 3); // 3-16 ans
-      final gender = Random().nextBool() ? 'male' : 'female';
-
-      final child = Child(
-        id: childId,
-        name: name,
-        age: age,
-        enrolledCourses: [], // Will be filled in _assignChildrenToCourses
-        parentId: '', // Will be filled in _generateParents
-        gender: gender,
-      );
-
-      await children.doc(childId).set(child.toMap());
-      childIds.add(childId);
-    }
-
-    return childIds;
+  String _getRandomRole() {
+    return (List<String>.from(lesRoles)..shuffle()).first;
   }
 
-  Future<void> _assignChildrenToCourses(
-    List<String> childIds,
-    List<Course> allCourses,
-  ) async {
+  Future<void> _assignChildrenToCourses(List<Course> courses) async {
     print("🔄 Attribution des cours aux enfants...");
-    final batch = _firestore.batch();
 
-    for (final childId in childIds) {
-      final childDoc = await children.doc(childId).get();
-      final childData = childDoc.data() as Map<String, dynamic>;
-      final int age = childData['age'] as int;
+    final parentsSnapshot = await parents.get();
 
-      // Find courses suitable for this child's age
-      final List<Course> suitableCourses =
-          allCourses.where((course) {
-            final ageParts = course.ageRange.split('-');
-            final minAge = int.parse(ageParts[0]);
-            final maxAge = int.parse(ageParts[1].split(' ')[0]);
-            return age >= minAge && age <= maxAge;
-          }).toList();
+    for (final parentDoc in parentsSnapshot.docs) {
+      final childrenSnapshot =
+          await parentDoc.reference.collection('children').get();
 
-      // Ensure we have courses that match this child's age
-      if (suitableCourses.isEmpty) {
-        // If no suitable courses found, create a special course for this age
-        final randomClub =
-            allCourses.isNotEmpty
-                ? allCourses.first.club
-                : (await _generateClubs(1)).first;
-        final List<Prof> allProfsList = [];
-        final allProfsSnapshot = await profs.get();
-        for (final doc in allProfsSnapshot.docs) {
-          final profData = doc.data() as Map<String, dynamic>;
-          allProfsList.add(Prof.fromMap(profData));
-        }
+      for (final childDoc in childrenSnapshot.docs) {
+        final childData = childDoc.data();
+        final age = childData['age'] as int;
 
-        final specialCourse = await _generateRandomCourse(
-          allProfsList,
-          randomClub,
-        );
-        suitableCourses.add(specialCourse);
-        allCourses.add(specialCourse);
-      }
+        // Trouver les cours appropriés
+        final suitableCourses =
+            courses.where((course) {
+              final ageParts = course.ageRange.split('-');
+              final minAge = int.parse(ageParts[0]);
+              final maxAge = int.parse(ageParts[1].split(' ')[0]);
+              return age >= minAge && age <= maxAge;
+            }).toList();
 
-      // Shuffle to get random courses
-      suitableCourses.shuffle();
+        if (suitableCourses.isNotEmpty) {
+          final count = min(
+            faker.randomGenerator.integer(2, min: 1),
+            suitableCourses.length,
+          );
+          suitableCourses.shuffle();
+          final enrolledCourses =
+              suitableCourses.take(count).map((e) => e.id).toList();
 
-      // Make sure child has at least 1 course, up to 3 max
-      final coursesToAssign = min(
-        max(1, faker.randomGenerator.integer(3)),
-        suitableCourses.length,
-      );
-
-      // Check for schedule conflicts
-      final List<String> assignedCourseIds = [];
-      final List<Schedule> assignedSchedules = [];
-
-      for (
-        int i = 0;
-        i < suitableCourses.length &&
-            assignedCourseIds.length < coursesToAssign;
-        i++
-      ) {
-        final Course course = suitableCourses[i];
-        bool hasConflict = false;
-
-        // Check if any of this course's schedules conflict with already assigned schedules
-        for (final courseSchedule in course.schedules) {
-          for (final assignedSchedule in assignedSchedules) {
-            if (_schedulesOverlap(courseSchedule, assignedSchedule)) {
-              hasConflict = true;
-              break;
-            }
-          }
-          if (hasConflict) break;
-        }
-
-        if (!hasConflict) {
-          assignedCourseIds.add(course.id);
-          assignedSchedules.addAll(course.schedules);
+          // Mettre à jour l'enfant avec les cours
+          await parentDoc.reference
+              .collection('children')
+              .doc(childDoc.id)
+              .update({'enrolledCourses': enrolledCourses});
         }
       }
-
-      // Update the child with enrolled courses
-      batch.update(children.doc(childId), {
-        'enrolledCourses': assignedCourseIds,
-      });
     }
-
-    await batch.commit();
   }
 
-  // Helper method to check if two schedules overlap
   bool _schedulesOverlap(Schedule a, Schedule b) {
     // Check if schedules occur on the same day
     bool sameDays = a.days.any((day) => b.days.contains(day));
@@ -679,19 +626,48 @@ class ClearDatabaseButton extends StatelessWidget {
     'profs',
   ];
 
+  // Future<void> _clearDatabase() async {
+  //   try {
+  //     for (final collectionName in collectionsToClear) {
+  //       final collectionRef = _firestore.collection(collectionName);
+  //       final snapshot = await collectionRef.get();
+  //
+  //       // Delete each document
+  //       for (final doc in snapshot.docs) {
+  //         await doc.reference.delete();
+  //       }
+  //     }
+  //
+  //     print('Specified collections cleared successfully.');
+  //   } catch (e) {
+  //     print('Error clearing database: $e');
+  //   }
+  // }
   Future<void> _clearDatabase() async {
     try {
-      for (final collectionName in collectionsToClear) {
-        final collectionRef = _firestore.collection(collectionName);
-        final snapshot = await collectionRef.get();
+      // Supprimer les parents et leurs sous-collections
+      final parentsSnapshot = await _firestore.collection('parents').get();
+      for (final doc in parentsSnapshot.docs) {
+        // Supprimer les enfants (sous-collection)
+        final childrenSnapshot =
+            await doc.reference.collection('children').get();
+        for (final childDoc in childrenSnapshot.docs) {
+          await childDoc.reference.delete();
+        }
+        // Supprimer le parent
+        await doc.reference.delete();
+      }
 
-        // Delete each document
+      // Supprimer les autres collections
+      final otherCollections = ['courses', 'clubs', 'profs'];
+      for (final collectionName in otherCollections) {
+        final snapshot = await _firestore.collection(collectionName).get();
         for (final doc in snapshot.docs) {
           await doc.reference.delete();
         }
       }
 
-      print('Specified collections cleared successfully.');
+      print('Database cleared successfully.');
     } catch (e) {
       print('Error clearing database: $e');
     }

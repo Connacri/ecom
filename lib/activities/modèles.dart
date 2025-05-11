@@ -153,18 +153,28 @@ class Club {
 class UserModel {
   final String id;
   final String name;
+  final List<String> photos;
   final String phone;
   final String email;
   final String gender;
   final List<String> childrenIds;
+  final DateTime? createdAt;
+  final DateTime? lastLogin;
+  final DateTime? editedAt;
+  final String role;
 
   UserModel({
     required this.id,
     required this.name,
+    required this.photos,
     required this.phone,
     required this.email,
     required this.gender,
     required this.childrenIds,
+    required this.createdAt,
+    required this.lastLogin,
+    required this.editedAt,
+    required this.role,
   });
 
   factory UserModel.fromMap(Map<String, dynamic> data, String id) {
@@ -172,9 +182,14 @@ class UserModel {
       id: id,
       name: data['name'] ?? '',
       phone: data['phone'] ?? '',
+      photos: List<String>.from(data['photos'] ?? []),
       email: data['email'] ?? '',
       gender: data['gender'] ?? '',
       childrenIds: List<String>.from(data['childrenIds'] ?? []),
+      createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
+      lastLogin: (data['lastLogin'] as Timestamp?)?.toDate(),
+      editedAt: (data['editedAt'] as Timestamp?)?.toDate(),
+      role: data['role'] ?? 'parent',
     );
   }
 
@@ -182,15 +197,20 @@ class UserModel {
     return {
       'name': name,
       'phone': phone,
+      'logoUrl': photos,
       'email': email,
       'gender': gender,
       'childrenIds': childrenIds,
+      'createdAt': createdAt,
+      'lastLogin': lastLogin,
+      'editedAt': editedAt,
+      'role': role,
     };
   }
 
   @override
   String toString() {
-    return 'User(id: $id, name: $name, phone : $phone, email: $email, gender:$gender, children: ${childrenIds.length})';
+    return 'UserModel(id: $id, name: $name, phone: $phone,photos: $photos email: $email, gender: $gender, role: $role, children: ${childrenIds.length})';
   }
 }
 
@@ -291,3 +311,26 @@ class ImageItem {
 
   ImageItem({this.file, this.url});
 }
+
+const lesRoles = [
+  'club',
+  'association',
+  'ecole',
+  'parent',
+  'professeur',
+  'coach',
+  'animateur',
+  'formateur',
+  'moniteur',
+  'intervenant extérieur',
+  'médiateur',
+  'tuteur',
+  'grand-parent',
+  'oncle/tante',
+  'frère/sœur',
+  'famille d’accueil',
+  'éducateur',
+  'enseignant suppléant',
+  'conseiller pédagogique',
+  'autre',
+];

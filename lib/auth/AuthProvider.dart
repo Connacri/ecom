@@ -27,7 +27,7 @@ class AuthService {
       final User? firebaseUser = userCredential.user;
       if (firebaseUser != null) {
         // 🔥 Insertion dans Supabase après 1re connexion
-        await _createUserInSupabase(firebaseUser);
+        //  await _createUserInSupabase(firebaseUser);
       }
       return userCredential.user;
     } catch (e, s) {

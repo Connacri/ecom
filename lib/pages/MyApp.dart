@@ -105,6 +105,14 @@ class _PageLanceState extends State<PageLance> {
                 titleLarge: TextStyle(color: Colors.black),
                 labelLarge: TextStyle(color: Colors.black),
               ),
+              dropdownMenuTheme: DropdownMenuThemeData(
+                menuStyle: MenuStyle(
+                  backgroundColor: WidgetStateProperty.all(Colors.white),
+                ),
+                inputDecorationTheme: InputDecorationTheme(
+                  border: OutlineInputBorder(),
+                ),
+              ),
             ),
             darkTheme: ThemeData(
               fontFamily:
@@ -130,9 +138,18 @@ class _PageLanceState extends State<PageLance> {
                 titleLarge: TextStyle(color: Colors.white),
                 labelLarge: TextStyle(color: Colors.white),
               ),
+              dropdownMenuTheme: DropdownMenuThemeData(
+                menuStyle: MenuStyle(
+                  backgroundColor: WidgetStateProperty.all(Colors.white),
+                ),
+                inputDecorationTheme: InputDecorationTheme(
+                  border: OutlineInputBorder(),
+                ),
+              ),
             ),
             themeMode:
                 themeProvider.isDarkTheme ? ThemeMode.dark : ThemeMode.light,
+
             home: Scaffold(
               body: AuthScreen(),
               //HomePage(),

@@ -129,7 +129,9 @@ class ClubProvider with ChangeNotifier {
         'gender': child.gender,
       });
 
-      final parentDocRef = _firestore.collection('parents').doc(child.parentId);
+      final parentDocRef = _firestore
+          .collection('userModel')
+          .doc(child.parentId);
       batch.update(parentDocRef, {
         'childrenIds': FieldValue.arrayUnion([childDocRef.id]),
       });
@@ -163,7 +165,9 @@ class ClubProvider with ChangeNotifier {
 
       final child = _children.firstWhere((c) => c.id == id);
       if (child.parentId.isNotEmpty) {
-        final parentRef = _firestore.collection('parents').doc(child.parentId);
+        final parentRef = _firestore
+            .collection('userModel')
+            .doc(child.parentId);
         batch.update(parentRef, {
           'childrenIds': FieldValue.arrayRemove([id]),
         });
@@ -367,7 +371,7 @@ class UserProvider with ChangeNotifier {
 
   void _listenToUsers() {
     _firestore
-        .collection('parents')
+        .collection('userModel')
         .orderBy('name')
         .snapshots()
         .listen(
@@ -429,7 +433,7 @@ class UserProvider with ChangeNotifier {
   //
   //     // 1. Recharge le parent
   //     final parentDoc =
-  //         await _firestore.collection('parents').doc(userId).get();
+  //         await _firestore.collection('userModel').doc(userId).get();
   //     final updatedUser = UserModel.fromMap(parentDoc.data()!, parentDoc.id);
   //
   //     // 2. Met à jour la liste locale
@@ -473,7 +477,7 @@ class UserProvider with ChangeNotifier {
   // }
   // Ajoutez ce stream
   Stream<List<ParentWithChildren>> get parentsWithChildrenStream {
-    return _firestore.collection('parents').snapshots().asyncMap((
+    return _firestore.collection('userModel').snapshots().asyncMap((
       snapshot,
     ) async {
       final parents =
@@ -501,7 +505,7 @@ class UserProvider with ChangeNotifier {
 
   Future<void> addUser(UserModel user) async {
     try {
-      await _firestore.collection('parents').doc(user.id).set(user.toMap());
+      await _firestore.collection('userModel').doc(user.id).set(user.toMap());
       notifyListeners();
     } catch (e) {
       debugPrint('Erreur addUser: $e');
@@ -511,7 +515,10 @@ class UserProvider with ChangeNotifier {
 
   Future<void> updateUser(UserModel user) async {
     try {
-      await _firestore.collection('parents').doc(user.id).update(user.toMap());
+      await _firestore
+          .collection('userModel')
+          .doc(user.id)
+          .update(user.toMap());
       notifyListeners();
     } catch (e) {
       debugPrint('Erreur updateUser: $e');
@@ -524,7 +531,7 @@ class UserProvider with ChangeNotifier {
       final user = _users.firstWhere((u) => u.id == id);
       final batch = _firestore.batch();
 
-      final userRef = _firestore.collection('parents').doc(id);
+      final userRef = _firestore.collection('userModel').doc(id);
       batch.delete(userRef);
 
       for (final childId in user.childrenIds) {
@@ -544,7 +551,7 @@ class UserProvider with ChangeNotifier {
     try {
       final batch = _firestore.batch();
 
-      final parentRef = _firestore.collection('parents').doc(parentId);
+      final parentRef = _firestore.collection('userModel').doc(parentId);
       final childRef = _firestore.collection('children').doc(childId);
 
       batch.update(parentRef, {
@@ -575,6 +582,11 @@ class UserProvider with ChangeNotifier {
                 childrenIds: [],
                 gender: '',
                 phone: '',
+                createdAt: null,
+                lastLogin: null,
+                editedAt: null,
+                role: '',
+                photos: [],
               ),
               children: [],
             ),
@@ -583,6 +595,29 @@ class UserProvider with ChangeNotifier {
     } catch (e) {
       debugPrint('Erreur getChildrenByUserId: $e');
       return [];
+    }
+  }
+
+  Future<UserModel?> getUserData(String userId) async {
+    try {
+      DocumentSnapshot userDoc =
+          await FirebaseFirestore.instance
+              .collection(
+                'userModel',
+              ) // ou la collection où sont stockés vos users
+              .doc(userId)
+              .get();
+
+      if (userDoc.exists) {
+        return UserModel.fromMap(
+          userDoc.data() as Map<String, dynamic>,
+          userDoc.id,
+        );
+      }
+      return null;
+    } catch (e) {
+      print('Erreur lors de la récupération: $e');
+      return null;
     }
   }
 

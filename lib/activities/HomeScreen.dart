@@ -4,6 +4,7 @@ import 'package:ecom/auth/AuthProvider.dart';
 import 'package:ecom/pages/MyApp.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../fonctions/AppLocalizations.dart';
@@ -151,7 +152,45 @@ class _HomeScreenActState extends State<HomeScreenAct> {
                               ),
                             );
                           },
-                          child: Text(_user!.displayName ?? 'User'),
+                          child: Column(
+                            children: [
+                              Text(_user!.displayName ?? 'User'),
+                              FutureBuilder<UserModel?>(
+                                future: userProvider.getUserData(_user!.uid),
+                                builder: (context, snapshot) {
+                                  if (snapshot.connectionState ==
+                                      ConnectionState.waiting) {
+                                    return Center(
+                                      child: CircularProgressIndicator(),
+                                    );
+                                  }
+
+                                  if (!snapshot.hasData ||
+                                      snapshot.data == null) {
+                                    return Center(
+                                      child: Text('Utilisateur non trouvé'),
+                                    );
+                                  }
+
+                                  final userFire = snapshot.data!;
+                                  return Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(userFire.role.toUpperCase()),
+
+                                      Text(
+                                        'Créer le : ' +
+                                            DateFormat(
+                                              'dd/MM/yyyy HH:mm',
+                                            ).format(userFire.createdAt!),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -165,9 +204,11 @@ class _HomeScreenActState extends State<HomeScreenAct> {
                   delegate: SliverChildBuilderDelegate((context, index) {
                     final parentWithChildren =
                         userProvider.parentsWithChildren[index];
+
                     return _buildParentCard(
                       context,
                       parentWithChildren.parent.id, // Pass parentId
+
                       courseProvider,
                     );
                   }, childCount: userProvider.parentsWithChildren.length),
