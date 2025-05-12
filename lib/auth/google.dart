@@ -1,11 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:ecom/activities/HomeScreen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:lottie/lottie.dart';
 
 import '../activities/modèles.dart';
+import '../activities/screens/userHomePage.dart';
 import '../fonctions/AppLocalizations.dart';
 import '../pages/MyApp.dart';
 import 'AuthProvider.dart';
@@ -71,7 +71,7 @@ class _googleState extends State<google> {
             phone: '', // à remplir via formulaire plus tard si besoin
             email: user.email ?? '',
             gender: '',
-            childrenIds: [],
+
             createdAt: DateTime.now(),
             lastLogin: DateTime.now(),
             editedAt: DateTime.now(),
@@ -90,7 +90,7 @@ class _googleState extends State<google> {
 
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (ctx) => HomeScreenAct()),
+          MaterialPageRoute(builder: (ctx) => HomePage()), //HomeScreenAct()),
         );
       }
     } catch (e) {
@@ -140,7 +140,7 @@ class _googleState extends State<google> {
                 ? CircularProgressIndicator()
                 : _user == null
                 ? _buildLoginUI()
-                : HomeScreenAct(),
+                : HomePage(), //HomeScreenAct(),
         //_buildProfileUI(),
       ),
     );

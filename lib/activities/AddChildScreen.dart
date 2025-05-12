@@ -71,7 +71,7 @@ class _AddChildScreenState extends State<AddChildScreen> {
 
       if (widget.child == null) {
         // Add new child
-        await context.read<ClubProvider>().addChild(child);
+        await context.read<ChildProvider>().addChild(child, widget.parent.id);
 
         if (mounted) {
           Navigator.pop(context);
@@ -81,7 +81,11 @@ class _AddChildScreenState extends State<AddChildScreen> {
         }
       } else {
         // Update existing child
-        await context.read<ClubProvider>().updateChild(child);
+        await context.read<ChildProvider>().updateChild(
+          child,
+          widget.parent.id,
+        );
+
         if (mounted) {
           Navigator.pop(context);
           ScaffoldMessenger.of(context).showSnackBar(

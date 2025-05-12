@@ -2,9 +2,15 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as su;
 
+import '../activities/providers.dart';
+
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final ChildProvider? childProvider; // Ajoutez cette ligne
+
+  // Modifiez le constructeur pour accepter le provider
+  AuthService({this.childProvider});
 
   Future<User?> signInWithGoogle() async {
     try {
@@ -40,6 +46,7 @@ class AuthService {
   Future<void> signOut() async {
     await _googleSignIn.signOut();
     await _auth.signOut();
+    childProvider?.clearCache(); // Vide le cache ici
   }
 
   Future<bool> deleteUserAccountPermanently() async {

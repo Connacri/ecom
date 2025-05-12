@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 
-import '../activities/HomeScreen.dart';
+import '../activities/screens/userHomePage.dart';
 import '../ads_provider.dart';
 import '../auth/google.dart';
 import '../fonctions/AppLocalizations.dart';
@@ -212,9 +212,9 @@ class _AuthScreenState extends State<AuthScreen> {
             // );
             // Utilisateur authentifié, naviguer vers PageLance
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              Navigator.of(
-                context,
-              ).push(MaterialPageRoute(builder: (ctx) => HomeScreenAct()));
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (ctx) => HomePage()),
+              ); //HomeScreenAct()));
             });
             return Container(); // Retourner un widget vide pendant la navigation
           }

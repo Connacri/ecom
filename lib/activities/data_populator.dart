@@ -64,11 +64,21 @@ class DataPopulator {
 
     for (int i = 0; i < count; i++) {
       final id = uuid.v4();
+      final clubId = uuid.v4();
       final name = "${faker.person.firstName()} ${faker.person.lastName()}";
       final email = faker.internet.email();
       final phone = faker.phoneNumber.us();
-
-      final prof = Prof(id: id, name: name, email: email, phone: phone);
+      final photos = List<String>.generate(
+        faker.randomGenerator.integer(4, min: 2),
+        (index) => "https://picsum.photos/seed/${clubId}_$index/400/300",
+      );
+      final prof = Prof(
+        id: id,
+        name: name,
+        email: email,
+        phone: phone,
+        photos: photos,
+      );
 
       await profs.doc(id).set(prof.toMap());
       generatedProfs.add(prof);
@@ -210,7 +220,7 @@ class DataPopulator {
         id: parentId,
         name: name,
         email: email,
-        childrenIds: parentChildren,
+
         gender: gender,
         phone: phone,
         createdAt: faker.date.dateTime(minYear: 2024, maxYear: 2024),
@@ -379,7 +389,19 @@ class DataPopulatorClaude {
       final email = faker.internet.email();
       final phone = faker.phoneNumber.us();
 
-      final prof = Prof(id: id, name: name, email: email, phone: phone);
+      final clubId = uuid.v4();
+
+      final photos = List<String>.generate(
+        faker.randomGenerator.integer(4, min: 2),
+        (index) => "https://picsum.photos/seed/${clubId}_$index/400/300",
+      );
+      final prof = Prof(
+        id: id,
+        name: name,
+        email: email,
+        phone: phone,
+        photos: photos,
+      );
 
       await profs.doc(id).set(prof.toMap());
       generatedProfs.add(prof);
@@ -540,7 +562,7 @@ class DataPopulatorClaude {
         id: parentId,
         name: name,
         email: email,
-        childrenIds: childrenIds,
+
         gender: gender,
         phone: phone,
         createdAt: DateTime.now(),

@@ -7,12 +7,16 @@ class Schedule {
   final DateTime startTime;
   final DateTime endTime;
   final List<String> days;
+  final DateTime? createdAt;
+  final DateTime? editedAt;
 
   Schedule({
     required this.id,
     required this.startTime,
     required this.endTime,
     required this.days,
+    this.createdAt,
+    this.editedAt,
   });
 
   factory Schedule.fromMap(Map<String, dynamic> data) {
@@ -21,6 +25,8 @@ class Schedule {
       startTime: (data['startTime'] as Timestamp).toDate(),
       endTime: (data['endTime'] as Timestamp).toDate(),
       days: List<String>.from(data['days'] ?? []),
+      createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
+      editedAt: (data['editedAt'] as Timestamp?)?.toDate(),
     );
   }
 
@@ -30,6 +36,8 @@ class Schedule {
       'startTime': Timestamp.fromDate(startTime),
       'endTime': Timestamp.fromDate(endTime),
       'days': days,
+      'createdAt': createdAt,
+      'editedAt': editedAt,
     };
   }
 
@@ -47,6 +55,9 @@ class Course {
   final List<Schedule> schedules;
   final String ageRange;
   final List<String> profIds;
+  final DateTime? createdAt;
+
+  final DateTime? editedAt;
 
   Course({
     required this.id,
@@ -56,6 +67,9 @@ class Course {
     required this.schedules,
     required this.ageRange,
     required this.profIds,
+    this.createdAt,
+
+    this.editedAt,
   });
   Map<String, dynamic> toMap() {
     return {
@@ -68,6 +82,9 @@ class Course {
           schedules.map((s) => s.toMap()).toList(), // Convert schedules to maps
       'ageRange': ageRange,
       'profIds': profIds,
+      'createdAt': createdAt,
+
+      'editedAt': editedAt,
     };
   }
 
@@ -97,6 +114,9 @@ class Course {
           [],
       ageRange: data['ageRange'] ?? 'Non spécifié',
       profIds: List<String>.from(data['profIds'] ?? []),
+      createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
+
+      editedAt: (data['editedAt'] as Timestamp?)?.toDate(),
     );
   }
 
@@ -113,14 +133,20 @@ class Club {
   final String logoUrl;
   final List<String> photos;
   final List<Course> courses;
+  final DateTime? createdAt;
+  final DateTime? lastLogin;
+  final DateTime? editedAt;
 
   Club({
     required this.id,
     required this.name,
-    required this.phone, // Ajouté dans le constructeur
+    required this.phone,
     required this.logoUrl,
     required this.photos,
     required this.courses,
+    this.createdAt,
+    this.lastLogin,
+    this.editedAt,
   });
 
   factory Club.fromMap(Map<String, dynamic> data, String id) {
@@ -131,6 +157,9 @@ class Club {
       logoUrl: data['logoUrl'] ?? 'https://picsum.photos/200/300',
       photos: List<String>.from(data['photos'] ?? []),
       courses: [],
+      createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
+      lastLogin: (data['lastLogin'] as Timestamp?)?.toDate(),
+      editedAt: (data['editedAt'] as Timestamp?)?.toDate(),
     );
   }
 
@@ -140,7 +169,9 @@ class Club {
       'phone': phone, // Ajouté dans la sérialisation
       'logoUrl': logoUrl,
       'photos': photos,
-      'courses': courses.map((e) => e.id).toList(),
+      'courses': courses.map((e) => e.id).toList(), 'createdAt': createdAt,
+      'lastLogin': lastLogin,
+      'editedAt': editedAt,
     };
   }
 
@@ -157,7 +188,7 @@ class UserModel {
   final String phone;
   final String email;
   final String gender;
-  final List<String> childrenIds;
+
   final DateTime? createdAt;
   final DateTime? lastLogin;
   final DateTime? editedAt;
@@ -170,7 +201,7 @@ class UserModel {
     required this.phone,
     required this.email,
     required this.gender,
-    required this.childrenIds,
+
     required this.createdAt,
     required this.lastLogin,
     required this.editedAt,
@@ -185,7 +216,7 @@ class UserModel {
       photos: List<String>.from(data['photos'] ?? []),
       email: data['email'] ?? '',
       gender: data['gender'] ?? '',
-      childrenIds: List<String>.from(data['childrenIds'] ?? []),
+
       createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
       lastLogin: (data['lastLogin'] as Timestamp?)?.toDate(),
       editedAt: (data['editedAt'] as Timestamp?)?.toDate(),
@@ -200,7 +231,7 @@ class UserModel {
       'logoUrl': photos,
       'email': email,
       'gender': gender,
-      'childrenIds': childrenIds,
+
       'createdAt': createdAt,
       'lastLogin': lastLogin,
       'editedAt': editedAt,
@@ -210,19 +241,7 @@ class UserModel {
 
   @override
   String toString() {
-    return 'UserModel(id: $id, name: $name, phone: $phone,photos: $photos email: $email, gender: $gender, role: $role, children: ${childrenIds.length})';
-  }
-}
-
-class ParentWithChildren {
-  final UserModel parent;
-  final List<Child> children;
-
-  ParentWithChildren({required this.parent, required this.children});
-
-  @override
-  String toString() {
-    return 'ParentWithChildren(parent: $parent, children: ${children.length})';
+    return 'UserModel(id: $id, name: $name, phone: $phone,photos: $photos email: $email, gender: $gender, role: $role, ';
   }
 }
 
@@ -233,6 +252,9 @@ class Child {
   final int age;
   final List<String> enrolledCourses;
   final String parentId;
+  final DateTime? createdAt;
+
+  final DateTime? editedAt;
 
   Child({
     required this.id,
@@ -241,6 +263,9 @@ class Child {
     required this.gender,
     required this.enrolledCourses,
     required this.parentId,
+    this.createdAt,
+
+    this.editedAt,
   });
 
   factory Child.fromMap(Map<String, dynamic> data, String id) {
@@ -251,6 +276,9 @@ class Child {
       gender: data['gender'] ?? '',
       enrolledCourses: List<String>.from(data['enrolledCourses'] ?? []),
       parentId: data['parentId'] ?? '',
+      createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
+
+      editedAt: (data['editedAt'] as Timestamp?)?.toDate(),
     );
   }
 
@@ -261,6 +289,9 @@ class Child {
       'gender': gender,
       'enrolledCourses': enrolledCourses,
       'parentId': parentId,
+      'createdAt': createdAt,
+
+      'editedAt': editedAt,
     };
   }
 
@@ -272,28 +303,45 @@ class Child {
 
 class Prof {
   final String id;
+  final List<String> photos;
   final String name;
   final String email;
   final String phone;
+  final DateTime? createdAt;
+  final DateTime? editedAt;
 
   Prof({
     required this.id,
     required this.name,
+    required this.photos,
     required this.email,
     required this.phone,
+    this.createdAt,
+    this.editedAt,
   });
 
   factory Prof.fromMap(Map<String, dynamic> map) {
     return Prof(
       id: map['id'] ?? '',
       name: map['name'] ?? '',
+      photos: List<String>.from(map['photos'] ?? []),
       email: map['email'] ?? '',
       phone: map['phone'] ?? '',
+      createdAt: (map['createdAt'] as Timestamp?)?.toDate(),
+      editedAt: (map['editedAt'] as Timestamp?)?.toDate(),
     );
   }
 
   Map<String, dynamic> toMap() {
-    return {'id': id, 'name': name, 'email': email, 'phone': phone};
+    return {
+      'id': id,
+      'name': name,
+      'photos': photos,
+      'email': email,
+      'phone': phone,
+      'createdAt': createdAt,
+      'editedAt': editedAt,
+    };
   }
 
   @override
