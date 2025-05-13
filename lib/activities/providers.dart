@@ -205,7 +205,13 @@ class CourseProvider with ChangeNotifier {
   void clearcorses() {
     _courses.clear();
     _schedules.clear();
-    notifyListeners();
+
+    // Clear the courses list
+    _courses.clear();
+    // Notify listeners after the build phase is complete
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
   }
 
   void addCourse(Course course) {
@@ -234,4 +240,15 @@ class CourseProvider with ChangeNotifier {
   }
 
   // Add other CRUD operations as needed
+}
+
+class ProfProvider with ChangeNotifier {
+  List<UserModel> _professors = [];
+
+  List<UserModel> get professors => _professors;
+
+  void addProfessor(UserModel professor) {
+    _professors.add(professor);
+    notifyListeners();
+  }
 }

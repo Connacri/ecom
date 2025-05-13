@@ -8,6 +8,7 @@ import '../../fonctions/AppLocalizations.dart';
 import '../../pages/MyApp.dart';
 import '../AddCourseScreen.dart';
 import '../ParentsScreen.dart';
+import '../edition/EditClubScreen.dart';
 import '../modèles.dart';
 import '../providers.dart';
 
@@ -406,14 +407,48 @@ class _ClubHomePageState extends State<_ClubHomePage> {
       appBar: AppBar(
         automaticallyImplyLeading: false,
         title: Text(
-          'Bienvenue ${widget.user.name}',
+          'Hello ${widget.user.name}',
           // style: TextStyle(color: Colors.white),
         ),
         //backgroundColor: Colors.blueAccent,
         elevation: 0,
         //  iconTheme: IconThemeData(color: Colors.white),
+        // actions: [
+        //   IconButton(icon: Icon(Icons.refresh), onPressed: _fetchCourses),
+        //   IconButton(
+        //     onPressed:
+        //         isLoading
+        //             ? null
+        //             : () async {
+        //               childProvider.clearCache();
+        //               await _handleSignOut();
+        //             },
+        //     icon:
+        //         isLoading
+        //             ? const SizedBox(
+        //               width: 20,
+        //               height: 20,
+        //               child: CircularProgressIndicator(strokeWidth: 2),
+        //             )
+        //             : const Icon(Icons.logout),
+        //     tooltip: 'Logout',
+        //   ),
+        // ],
         actions: [
           IconButton(icon: Icon(Icons.refresh), onPressed: _fetchCourses),
+          IconButton(
+            icon: Icon(Icons.edit),
+            onPressed: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => EditClubScreen(club: widget.user),
+                ),
+              );
+              // Optionally refresh data after editing
+              _fetchCourses();
+            },
+          ),
           IconButton(
             onPressed:
                 isLoading
@@ -434,130 +469,301 @@ class _ClubHomePageState extends State<_ClubHomePage> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              children: [
-                Icon(
-                  Icons.sports_soccer,
-                  size: 50, //color: Colors.blueAccent
-                ),
-                SizedBox(height: 10),
-                Text(
-                  'Interface Club',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleLarge?.copyWith(color: Colors.grey[700]),
-                ),
-                Text(
-                  'Rôle: ${widget.user.role}',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleMedium?.copyWith(color: Colors.grey[600]),
-                ),
-                SizedBox(height: 20),
-                ElevatedButton.icon(
-                  icon: Icon(Icons.add),
-                  label: Text('Ajouter un Cours'),
-                  onPressed: () async {
-                    await Navigator.push(
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  Icon(Icons.sports_soccer, size: 50),
+                  SizedBox(height: 10),
+                  Text(
+                    'Interface Club',
+                    style: Theme.of(
                       context,
-                      MaterialPageRoute(
-                        builder: (context) => AddCourseScreen(),
-                      ),
-                    );
-                    _fetchCourses(); // Refresh the list of courses after adding a new one
-                  },
-                  style: ElevatedButton.styleFrom(
-                    //  backgroundColor: Colors.blueAccent,
-                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    ).textTheme.titleLarge?.copyWith(color: Colors.grey[700]),
                   ),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child:
-                _isLoading
-                    ? Center(child: CircularProgressIndicator())
-                    : _courses.isEmpty
-                    ? Center(
-                      child: Text(
-                        'Aucun cours trouvé',
-                        style: TextStyle(color: Colors.grey),
+                  Text(
+                    'Rôle: ${widget.user.role}',
+                    style: Theme.of(
+                      context,
+                    ).textTheme.titleMedium?.copyWith(color: Colors.grey[600]),
+                  ),
+                  SizedBox(height: 20),
+                  // Display Club Details
+                  Text(
+                    'Nom: ${widget.user.name}',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    'Email: ${widget.user.email}',
+                    style: TextStyle(fontSize: 16),
+                  ),
+                  Text(
+                    'Téléphone: ${widget.user.phone ?? "Non spécifié"}',
+                    style: TextStyle(fontSize: 16),
+                  ),
+                  SizedBox(height: 10),
+                  if (widget.user.logoUrl != null)
+                    Image.network(
+                      widget.user.logoUrl!,
+                      height: 100,
+                      fit: BoxFit.cover,
+                    ),
+                  SizedBox(height: 10),
+                  if (widget.user.photos != null &&
+                      widget.user.photos!.isNotEmpty)
+                    SizedBox(
+                      height: 100,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: widget.user.photos!.length,
+                        itemBuilder: (context, index) {
+                          return Padding(
+                            padding: EdgeInsets.only(right: 8.0),
+                            child: Image.network(
+                              widget.user.photos![index],
+                              width: 100,
+                              height: 100,
+                              fit: BoxFit.cover,
+                            ),
+                          );
+                        },
                       ),
-                    )
-                    : ListView.builder(
-                      itemCount: _courses.length,
-                      itemBuilder: (context, index) {
-                        final course = _courses[index];
-                        return Card(
-                          margin: EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          elevation: 3,
-                          child: Padding(
-                            padding: EdgeInsets.all(16.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                    ),
+                  SizedBox(height: 20),
+                  ElevatedButton.icon(
+                    icon: Icon(Icons.add),
+                    label: Text('Ajouter un Cours'),
+                    onPressed: () async {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (context) => AddCourseScreen(user: widget.user),
+                        ),
+                      );
+                      _fetchCourses(); // Refresh the list of courses after adding a new one
+                    },
+                    style: ElevatedButton.styleFrom(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 10,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Rest of your existing code for displaying courses
+            _isLoading
+                ? Center(child: CircularProgressIndicator())
+                : _courses.isEmpty
+                ? Center(
+                  child: Text(
+                    'Aucun cours trouvé',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                )
+                : ListView.builder(
+                  shrinkWrap: true,
+                  physics: NeverScrollableScrollPhysics(),
+                  itemCount: _courses.length,
+                  itemBuilder: (context, index) {
+                    final course = _courses[index];
+                    return Card(
+                      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      elevation: 3,
+                      child: Padding(
+                        padding: EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
+                                Text(
+                                  course.name.toUpperCase(),
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                                 Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text(
-                                      course.name.toUpperCase(),
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
+                                    IconButton(
+                                      icon: Icon(
+                                        Icons.edit,
+                                        color: Colors.blue,
                                       ),
+                                      onPressed: () => _editCourse(course),
                                     ),
-                                    Row(
-                                      children: [
-                                        IconButton(
-                                          icon: Icon(
-                                            Icons.edit,
-                                            color: Colors.blue,
-                                          ),
-                                          onPressed: () => _editCourse(course),
-                                        ),
-                                        IconButton(
-                                          icon: Icon(
-                                            Icons.delete,
-                                            color: Colors.red,
-                                          ),
-                                          onPressed:
-                                              () => _deleteCourse(course.id),
-                                        ),
-                                      ],
+                                    IconButton(
+                                      icon: Icon(
+                                        Icons.delete,
+                                        color: Colors.red,
+                                      ),
+                                      onPressed: () {
+                                        showDialog(
+                                          context: context,
+                                          builder: (BuildContext context) {
+                                            return AlertDialog(
+                                              title: Text(
+                                                'Confirmer la suppression',
+                                              ),
+                                              content: Text(
+                                                'Êtes-vous sûr de vouloir supprimer ce cours?',
+                                              ),
+                                              actions: <Widget>[
+                                                TextButton(
+                                                  child: Text('Annuler'),
+                                                  onPressed: () {
+                                                    Navigator.of(
+                                                      context,
+                                                    ).pop(); // Close the dialog
+                                                  },
+                                                ),
+                                                TextButton(
+                                                  child: Text('Supprimer'),
+                                                  onPressed: () {
+                                                    Navigator.of(
+                                                      context,
+                                                    ).pop(); // Close the dialog
+                                                    _deleteCourse(
+                                                      course.id,
+                                                    ); // Delete the course
+                                                  },
+                                                ),
+                                              ],
+                                            );
+                                          },
+                                        );
+                                      },
                                     ),
                                   ],
                                 ),
-                                SizedBox(height: 8),
-                                Text(
-                                  'Description: ${course.description}',
-                                  style: TextStyle(color: Colors.grey[700]),
+                              ],
+                            ),
+                            SizedBox(height: 8),
+                            // Display up to 3 images
+                            if (course.photos!.isNotEmpty)
+                              SizedBox(
+                                height: 100,
+                                child: ListView.builder(
+                                  scrollDirection: Axis.horizontal,
+                                  itemCount:
+                                      course.photos!.length > 3
+                                          ? 3
+                                          : course.photos!.length,
+                                  itemBuilder: (context, index) {
+                                    return Padding(
+                                      padding: EdgeInsets.only(right: 8.0),
+                                      child: Image.network(
+                                        course.photos![index],
+                                        width: 100,
+                                        height: 100,
+                                        fit: BoxFit.cover,
+                                      ),
+                                    );
+                                  },
                                 ),
-                                SizedBox(height: 8),
-                                Text(
-                                  'Tranche d\'âge: ${course.ageRange}',
-                                  style: TextStyle(color: Colors.grey[700]),
+                              ),
+                            SizedBox(height: 8),
+                            Text(
+                              'Description: ${course.description}',
+                              style: TextStyle(color: Colors.grey[700]),
+                            ),
+                            SizedBox(height: 8),
+                            Text(
+                              'Tranche d\'âge: ${course.ageRange}',
+                              style: TextStyle(color: Colors.grey[700]),
+                            ),
+                            SizedBox(height: 8),
+                            Text(
+                              'Horaires:',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.grey[800],
+                              ),
+                            ),
+                            ...course.schedules.map((schedule) {
+                              return Padding(
+                                padding: EdgeInsets.symmetric(
+                                  vertical: 4.0,
+                                  horizontal: 8.0,
                                 ),
-                                SizedBox(height: 8),
-                                Text(
-                                  'Horaires:',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.grey[800],
-                                  ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.access_time,
+                                      size: 16,
+                                      color: Colors.grey,
+                                    ),
+                                    SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        '${schedule.days.join(", ")}: ${schedule.startTime.hour}:${schedule.startTime.minute.toString().padLeft(2, '0')} - ${schedule.endTime.hour}:${schedule.endTime.minute.toString().padLeft(2, '0')}',
+                                        style: TextStyle(
+                                          color: Colors.grey[600],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                ...course.schedules.map((schedule) {
+                              );
+                            }).toList(),
+                            SizedBox(height: 8),
+                            Text(
+                              'Professeurs:',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.grey[800],
+                              ),
+                            ),
+                            ...course.profIds.map((profId) {
+                              return FutureBuilder<DocumentSnapshot>(
+                                future:
+                                    FirebaseFirestore.instance
+                                        .collection('userModel')
+                                        .doc(profId)
+                                        .get(),
+                                builder: (context, snapshot) {
+                                  if (snapshot.connectionState ==
+                                      ConnectionState.waiting) {
+                                    return Padding(
+                                      padding: EdgeInsets.symmetric(
+                                        vertical: 4.0,
+                                        horizontal: 8.0,
+                                      ),
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 1,
+                                      ),
+                                    );
+                                  }
+                                  if (snapshot.hasError) {
+                                    return Padding(
+                                      padding: EdgeInsets.symmetric(
+                                        vertical: 4.0,
+                                        horizontal: 8.0,
+                                      ),
+                                      child: Text(
+                                        'Erreur: ${snapshot.error}',
+                                        style: TextStyle(color: Colors.red),
+                                      ),
+                                    );
+                                  }
+                                  final profData =
+                                      snapshot.data!.data()
+                                          as Map<String, dynamic>;
+                                  final prof = UserModel.fromMap(
+                                    profData,
+                                    snapshot.data!.id,
+                                  );
                                   return Padding(
                                     padding: EdgeInsets.symmetric(
                                       vertical: 4.0,
@@ -566,103 +772,31 @@ class _ClubHomePageState extends State<_ClubHomePage> {
                                     child: Row(
                                       children: [
                                         Icon(
-                                          Icons.access_time,
+                                          Icons.person,
                                           size: 16,
                                           color: Colors.grey,
                                         ),
                                         SizedBox(width: 8),
-                                        Expanded(
-                                          child: Text(
-                                            '${schedule.days.join(", ")}: ${schedule.startTime.hour}:${schedule.startTime.minute.toString().padLeft(2, '0')} - ${schedule.endTime.hour}:${schedule.endTime.minute.toString().padLeft(2, '0')}',
-                                            style: TextStyle(
-                                              color: Colors.grey[600],
-                                            ),
+                                        Text(
+                                          prof.name,
+                                          style: TextStyle(
+                                            color: Colors.grey[600],
                                           ),
                                         ),
                                       ],
                                     ),
                                   );
-                                }).toList(),
-                                SizedBox(height: 8),
-                                Text(
-                                  'Professeurs:',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.grey[800],
-                                  ),
-                                ),
-                                ...course.profIds.map((profId) {
-                                  return FutureBuilder<DocumentSnapshot>(
-                                    future:
-                                        FirebaseFirestore.instance
-                                            .collection('userModel')
-                                            .doc(profId)
-                                            .get(),
-                                    builder: (context, snapshot) {
-                                      if (snapshot.connectionState ==
-                                          ConnectionState.waiting) {
-                                        return Padding(
-                                          padding: EdgeInsets.symmetric(
-                                            vertical: 4.0,
-                                            horizontal: 8.0,
-                                          ),
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 1,
-                                          ),
-                                        );
-                                      }
-                                      if (snapshot.hasError) {
-                                        return Padding(
-                                          padding: EdgeInsets.symmetric(
-                                            vertical: 4.0,
-                                            horizontal: 8.0,
-                                          ),
-                                          child: Text(
-                                            'Erreur: ${snapshot.error}',
-                                            style: TextStyle(color: Colors.red),
-                                          ),
-                                        );
-                                      }
-                                      final profData =
-                                          snapshot.data!.data()
-                                              as Map<String, dynamic>;
-                                      final prof = UserModel.fromMap(
-                                        profData,
-                                        snapshot.data!.id,
-                                      );
-                                      return Padding(
-                                        padding: EdgeInsets.symmetric(
-                                          vertical: 4.0,
-                                          horizontal: 8.0,
-                                        ),
-                                        child: Row(
-                                          children: [
-                                            Icon(
-                                              Icons.person,
-                                              size: 16,
-                                              color: Colors.grey,
-                                            ),
-                                            SizedBox(width: 8),
-                                            Text(
-                                              prof.name,
-                                              style: TextStyle(
-                                                color: Colors.grey[600],
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      );
-                                    },
-                                  );
-                                }).toList(),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-          ),
-        ],
+                                },
+                              );
+                            }).toList(),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+          ],
+        ),
       ),
     );
   }

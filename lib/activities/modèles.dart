@@ -53,6 +53,7 @@ class Course {
   final String name;
   final UserModel club;
   final String description;
+  final List<String>? photos;
   final List<Schedule> schedules;
   final String ageRange;
   final List<String> profIds;
@@ -64,6 +65,7 @@ class Course {
     required this.id,
     required this.name,
     required this.club,
+    this.photos,
     required this.description,
     required this.schedules,
     required this.ageRange,
@@ -84,7 +86,7 @@ class Course {
       'ageRange': ageRange,
       'profIds': profIds,
       'createdAt': createdAt,
-
+      'photos': photos,
       'editedAt': editedAt,
     };
   }
@@ -103,6 +105,7 @@ class Course {
               ?.map((e) => Schedule.fromMap(e))
               .toList() ??
           [],
+      photos: List<String>.from(data['photos'] ?? []),
       ageRange: data['ageRange'] ?? 'Non spécifié',
       profIds: List<String>.from(data['profIds'] ?? []),
       createdAt: (data['createdAt'] as Timestamp?)?.toDate(),

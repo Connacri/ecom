@@ -63,8 +63,8 @@ class _googleState extends State<google> {
     try {
       User? user = await _authService.signInWithGoogle();
 
-      if (user != null) {
-        final uid = user.uid;
+      if (user == null) {
+        final uid = user!.uid;
         final docRef = FirebaseFirestore.instance
             .collection('userModel')
             .doc(uid);
