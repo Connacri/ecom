@@ -35,7 +35,13 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     super.initState();
     _loadData();
     _profSearchController.addListener(_filterProfs);
-    Provider.of<CourseProvider>(context).clearcorses();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Access Provider here
+    Provider.of<CourseProvider>(context, listen: false).clearcorses();
   }
 
   @override
@@ -377,6 +383,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
 
   @override
   Widget build(BuildContext context) {
+    //  Provider.of<CourseProvider>(context).clearcorses();
     if (_isLoading) {
       return Scaffold(
         appBar: AppBar(title: Text('Ajouter un Cours')),

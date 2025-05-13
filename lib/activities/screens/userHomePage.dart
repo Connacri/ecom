@@ -560,7 +560,7 @@ class _ClubHomePageState extends State<_ClubHomePage> {
     // Navigate to a screen where the course can be edited
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => AddCourseScreen()),
+      MaterialPageRoute(builder: (context) => EditCourseScreen(course: course)),
     ).then((_) {
       // Refresh the list of courses after editing
       _fetchCourses();
