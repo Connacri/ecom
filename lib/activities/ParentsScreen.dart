@@ -1,4 +1,5 @@
 import 'package:ecom/activities/providers.dart';
+import 'package:ecom/activities/screens/childDetail.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -7,6 +8,7 @@ import '../auth/AuthProvider.dart';
 import '../fonctions/AppLocalizations.dart';
 import '../pages/MyApp.dart';
 import 'AddChildScreen.dart';
+import 'AllButtons.dart';
 import 'data_populator.dart';
 import 'modèles.dart';
 
@@ -75,7 +77,13 @@ class _ParentHomePageState extends State<ParentHomePage> {
         // leading: CircleAvatar(
         //   backgroundImage: CachedNetworkImageProvider(widget.user.),
         // ),
-        title: Text('NextGen'),
+        title: InkWell(
+          onTap:
+              () => Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (ctx) => AllButtons())),
+          child: Text('NextGen'),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -96,8 +104,8 @@ class _ParentHomePageState extends State<ParentHomePage> {
                 isLoading
                     ? null
                     : () async {
-                      await _handleSignOut();
                       childProvider.clearCache();
+                      await _handleSignOut();
                     },
             icon:
                 isLoading
@@ -111,17 +119,19 @@ class _ParentHomePageState extends State<ParentHomePage> {
           ),
         ],
       ),
-      body: Center(
-        child: Column(
-          children: [
-            Text(
-              '${widget.user.role} '.toUpperCase() +
-                  '${widget.user.name}'.toUpperCase(),
-              style: TextStyle(fontSize: 20),
-            ),
-            SizedBox(height: 20),
-            _buildBody(childProvider, widget.user),
-          ],
+      body: SingleChildScrollView(
+        child: Center(
+          child: Column(
+            children: [
+              Text(
+                '${widget.user.role} '.toUpperCase() +
+                    '${widget.user.name}'.toUpperCase(),
+                style: TextStyle(fontSize: 20),
+              ),
+              SizedBox(height: 20),
+              _buildBody(childProvider, widget.user),
+            ],
+          ),
         ),
       ),
       floatingActionButton: FloatingActionButton(
@@ -149,14 +159,6 @@ class _ParentHomePageState extends State<ParentHomePage> {
       alignment: WrapAlignment.center,
       children: [
         ...provider.children.map((child) {
-          //final enrolledCourses =
-          // courseProvider.courses
-          //     .where(
-          //       (course) =>
-          //       child.enrolledCourses.contains(course.id),
-          // )
-          //  .toList();
-
           return SizedBox(
             width: MediaQuery.of(context).size.width / 2.4,
             height: 170,
@@ -167,6 +169,12 @@ class _ParentHomePageState extends State<ParentHomePage> {
               elevation: 4,
               clipBehavior: Clip.antiAlias,
               child: InkWell(
+                onTap:
+                    () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (ctx) => ChildDetailScreen(child: child),
+                      ),
+                    ),
                 onLongPress: () async {
                   final confirmed = await showDialog<bool>(
                     context: context,

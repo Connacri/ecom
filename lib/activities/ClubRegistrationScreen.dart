@@ -8,7 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import 'modèles.dart';
 
 class ClubRegistrationScreen extends StatefulWidget {
-  final Club? club;
+  final UserModel? club;
 
   ClubRegistrationScreen({this.club});
 
@@ -32,10 +32,10 @@ class _ClubRegistrationScreenState extends State<ClubRegistrationScreen> {
     super.initState();
     if (widget.club != null) {
       _nameController.text = widget.club!.name;
-      _phoneController.text = widget.club!.phone;
+      _phoneController.text = widget.club!.phone!;
       _logoUrl = widget.club!.logoUrl;
-      _images = widget.club!.photos.map((url) => ImageItem(url: url)).toList();
-      _courses = widget.club!.courses;
+      _images = widget.club!.photos!.map((url) => ImageItem(url: url)).toList();
+      _courses = widget.club!.courses!;
     }
   }
 
@@ -89,13 +89,18 @@ class _ClubRegistrationScreenState extends State<ClubRegistrationScreen> {
           }
         }
 
-        Club club = Club(
+        UserModel club = UserModel(
           id: widget.club?.id ?? DateTime.now().toString(),
           name: _nameController.text,
           phone: _phoneController.text,
           logoUrl: logoUrl,
           photos: photoUrls,
           courses: _courses,
+          email: '',
+          createdAt: null,
+          lastLogin: null,
+          editedAt: null,
+          role: '',
         );
 
         if (widget.club == null) {
@@ -106,7 +111,7 @@ class _ClubRegistrationScreenState extends State<ClubRegistrationScreen> {
             'photos': club.photos,
             'phone': club.phone,
             'courses':
-                club.courses
+                club.courses!
                     .map(
                       (course) => {
                         'name': course.name,
@@ -137,7 +142,7 @@ class _ClubRegistrationScreenState extends State<ClubRegistrationScreen> {
                 'logoUrl': club.logoUrl,
                 'photos': club.photos,
                 'courses':
-                    club.courses
+                    club.courses!
                         .map(
                           (course) => {
                             'name': course.name,

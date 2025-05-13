@@ -51,6 +51,13 @@ class _googleState extends State<google> {
   //   }
   // }
   Future<void> _handleSignIn(String role) async {
+    if (role.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Please select a role')));
+      return;
+    }
+
     setState(() => isLoading = true);
 
     try {
@@ -58,45 +65,55 @@ class _googleState extends State<google> {
 
       if (user != null) {
         final uid = user.uid;
-
         final docRef = FirebaseFirestore.instance
             .collection('userModel')
             .doc(uid);
         final docSnapshot = await docRef.get();
 
+        final userData = {
+          'name': user.displayName ?? 'New User',
+          'email': user.email ?? '',
+          'photos': user.photoURL != null ? [user.photoURL!] : [],
+          'role': role,
+          'lastLogin': FieldValue.serverTimestamp(),
+        };
+
         if (!docSnapshot.exists) {
-          final newUser = UserModel(
-            id: uid,
-            name: user.displayName ?? '',
-            phone: '', // à remplir via formulaire plus tard si besoin
-            email: user.email ?? '',
-            gender: '',
-
-            createdAt: DateTime.now(),
-            lastLogin: DateTime.now(),
-            editedAt: DateTime.now(),
-            role: role,
-            photos: [],
-          );
-
+          // New user - create document
           await docRef.set({
-            ...newUser.toMap(),
+            ...userData,
             'createdAt': FieldValue.serverTimestamp(),
-            'lastLogin': FieldValue.serverTimestamp(),
+            'editedAt': FieldValue.serverTimestamp(),
+            'phone': '',
+            'gender': '',
+            'courses': [],
           });
         } else {
-          await docRef.update({'lastLogin': FieldValue.serverTimestamp()});
+          // Existing user - update last login
+          await docRef.update(userData);
         }
 
+        if (!mounted) return;
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (ctx) => HomePage()), //HomeScreenAct()),
+          MaterialPageRoute(builder: (ctx) => HomePage()),
+        );
+      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Sign in failed - no user returned')),
         );
       }
     } catch (e) {
-      print("Erreur authentification : $e");
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error during sign in: ${e.toString()}')),
+      );
+      debugPrint('Erreur authentification: $e');
     } finally {
-      setState(() => isLoading = false);
+      if (mounted) {
+        setState(() => isLoading = false);
+      }
     }
   }
 

@@ -60,7 +60,7 @@ class _PageLanceState extends State<PageLance> {
         return BetterFeedback(
           localeOverride: localizationModel.locale,
           child: MaterialApp(
-            title: 'WaShop',
+            title: 'NextGen',
             supportedLocales: [
               Locale('en'),
               Locale('fr'),

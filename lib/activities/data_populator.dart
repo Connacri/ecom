@@ -50,7 +50,9 @@ class DataPopulator {
   Future<void> populateData() async {
     print("🌱 Démarrage du peuplement des données...");
 
-    final List<Prof> allProfs = await _generateProfs(8); // 👈 Génération ici
+    final List<UserModel> allProfs = await _generateProfs(
+      8,
+    ); // 👈 Génération ici
     final List<String> childIds = await _generateChildren(23);
     await _generateParents(12, childIds);
     await _generateClubsAndCourses(4, allProfs);
@@ -58,9 +60,9 @@ class DataPopulator {
     print("✅ Peuplement terminé avec succès !");
   }
 
-  Future<List<Prof>> _generateProfs(int count) async {
+  Future<List<UserModel>> _generateProfs(int count) async {
     print("👨‍🏫 Génération de $count professeurs...");
-    final List<Prof> generatedProfs = [];
+    final List<UserModel> generatedProfs = [];
 
     for (int i = 0; i < count; i++) {
       final id = uuid.v4();
@@ -72,12 +74,17 @@ class DataPopulator {
         faker.randomGenerator.integer(4, min: 2),
         (index) => "https://picsum.photos/seed/${clubId}_$index/400/300",
       );
-      final prof = Prof(
+      final prof = UserModel(
         id: id,
         name: name,
         email: email,
         phone: phone,
         photos: photos,
+        gender: '',
+        createdAt: null,
+        lastLogin: null,
+        editedAt: null,
+        role: '',
       );
 
       await profs.doc(id).set(prof.toMap());
@@ -92,7 +99,7 @@ class DataPopulator {
 
   Future<void> _generateClubsAndCourses(
     int clubCount,
-    List<Prof> allProfs,
+    List<UserModel> allProfs,
   ) async {
     print("🏟️ Génération de $clubCount clubs et leurs cours...");
 
@@ -107,13 +114,18 @@ class DataPopulator {
       );
 
       // Create the club first
-      final club = Club(
+      final club = UserModel(
         id: clubId,
         name: name,
         logoUrl: logoUrl,
         photos: photos,
         courses: [],
-        phone: phone, // Start with empty courses list
+        phone: phone,
+        email: '',
+        createdAt: null,
+        lastLogin: null,
+        editedAt: null,
+        role: '', // Start with empty courses list
       );
 
       final courseCount = faker.randomGenerator.integer(4, min: 2);
@@ -130,13 +142,13 @@ class DataPopulator {
       }
 
       // Update the club with the courses
-      club.courses.addAll(clubCourses);
+      club.courses!.addAll(clubCourses);
       await clubs.doc(clubId).set(club.toMap());
       await _assignChildrenToCourses(clubCourses);
     }
   }
 
-  Course _generateRandomCourse(List<Prof> profPool, Club club) {
+  Course _generateRandomCourse(List<UserModel> profPool, UserModel club) {
     final courseId = uuid.v4();
     final sport = faker.randomGenerator.element(sports);
     final courseName = "${faker.lorem.word().capitalize()} $sport";
@@ -174,7 +186,7 @@ class DataPopulator {
 
     final profCount = faker.randomGenerator.integer(2, min: 1);
     final List<String> profIds =
-        (List<Prof>.from(profPool)
+        (List<UserModel>.from(profPool)
           ..shuffle()).take(profCount).map((e) => e.id).toList();
 
     return Course(
@@ -370,8 +382,8 @@ class DataPopulatorClaude {
   Future<void> populateData() async {
     print("🌱 Démarrage du peuplement des données...");
 
-    final List<Prof> allProfs = await _generateProfs(8);
-    final List<Club> allClubs = await _generateClubs(4);
+    final List<UserModel> allProfs = await _generateProfs(8);
+    final List<UserModel> allClubs = await _generateClubs(4);
     final List<Course> allCourses = await _generateCourses(allClubs, allProfs);
     await _generateParents(12); // Génère les parents et leurs enfants
     await _assignChildrenToCourses(allCourses);
@@ -379,9 +391,9 @@ class DataPopulatorClaude {
     print("✅ Peuplement terminé avec succès !");
   }
 
-  Future<List<Prof>> _generateProfs(int count) async {
+  Future<List<UserModel>> _generateProfs(int count) async {
     print("👨‍🏫 Génération de $count professeurs...");
-    final List<Prof> generatedProfs = [];
+    final List<UserModel> generatedProfs = [];
 
     for (int i = 0; i < count; i++) {
       final id = uuid.v4();
@@ -395,12 +407,16 @@ class DataPopulatorClaude {
         faker.randomGenerator.integer(4, min: 2),
         (index) => "https://picsum.photos/seed/${clubId}_$index/400/300",
       );
-      final prof = Prof(
+      final prof = UserModel(
         id: id,
         name: name,
         email: email,
         phone: phone,
         photos: photos,
+        createdAt: null,
+        lastLogin: null,
+        editedAt: null,
+        role: '',
       );
 
       await profs.doc(id).set(prof.toMap());
@@ -410,9 +426,9 @@ class DataPopulatorClaude {
     return generatedProfs;
   }
 
-  Future<List<Club>> _generateClubs(int clubCount) async {
+  Future<List<UserModel>> _generateClubs(int clubCount) async {
     print("🏟️ Génération de $clubCount clubs...");
-    final List<Club> generatedClubs = [];
+    final List<UserModel> generatedClubs = [];
 
     for (int i = 1; i <= clubCount; i++) {
       final clubId = uuid.v4();
@@ -424,13 +440,18 @@ class DataPopulatorClaude {
         (index) => "https://picsum.photos/seed/${clubId}_$index/400/300",
       );
 
-      final club = Club(
+      final club = UserModel(
         id: clubId,
         name: name,
         logoUrl: logoUrl,
         photos: photos,
         courses: [],
         phone: phone,
+        email: '',
+        createdAt: null,
+        lastLogin: null,
+        editedAt: null,
+        role: '',
       );
 
       await clubs.doc(clubId).set(club.toMap());
@@ -441,8 +462,8 @@ class DataPopulatorClaude {
   }
 
   Future<List<Course>> _generateCourses(
-    List<Club> allClubs,
-    List<Prof> allProfs,
+    List<UserModel> allClubs,
+    List<UserModel> allProfs,
   ) async {
     print("📚 Génération des cours pour ${allClubs.length} clubs...");
     final List<Course> allCourses = [];
@@ -463,7 +484,10 @@ class DataPopulatorClaude {
     return allCourses;
   }
 
-  Future<Course> _generateRandomCourse(List<Prof> profPool, Club club) async {
+  Future<Course> _generateRandomCourse(
+    List<UserModel> profPool,
+    UserModel club,
+  ) async {
     final courseId = uuid.v4();
     final sport = faker.randomGenerator.element(sports);
     final courseName = "${faker.lorem.word().capitalize()} $sport";
@@ -501,7 +525,7 @@ class DataPopulatorClaude {
 
     final profCount = faker.randomGenerator.integer(3, min: 1);
     final List<String> profIds =
-        (List<Prof>.from(profPool)
+        (List<UserModel>.from(profPool)
           ..shuffle()).take(profCount).map((e) => e.id).toList();
 
     final course = Course(

@@ -19,6 +19,7 @@ class Schedule {
     this.editedAt,
   });
 
+  // Added proper null checks and type safety
   factory Schedule.fromMap(Map<String, dynamic> data) {
     return Schedule(
       id: data['id'] ?? '',
@@ -50,7 +51,7 @@ class Schedule {
 class Course {
   final String id;
   final String name;
-  final Club club;
+  final UserModel club;
   final String description;
   final List<Schedule> schedules;
   final String ageRange;
@@ -92,20 +93,10 @@ class Course {
     return Course(
       id: id,
       name: data['name'] ?? 'Sans nom',
-      club:
-          data['club'] != null
-              ? Club.fromMap(
-                data['club'] as Map<String, dynamic>,
-                data['clubId'],
-              )
-              : Club(
-                id: 'unknown',
-                name: 'Sans club',
-                phone: '',
-                logoUrl: '',
-                photos: [],
-                courses: [],
-              ),
+      club: UserModel.fromMap(
+        data['club'],
+        data['clubId'],
+      ), // Convert the club map to a UserModel
       description: data['description'] ?? 'Pas de description',
       schedules:
           (data['schedules'] as List<dynamic>?)
@@ -115,7 +106,6 @@ class Course {
       ageRange: data['ageRange'] ?? 'Non spécifié',
       profIds: List<String>.from(data['profIds'] ?? []),
       createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
-
       editedAt: (data['editedAt'] as Timestamp?)?.toDate(),
     );
   }
@@ -126,82 +116,29 @@ class Course {
   }
 }
 
-class Club {
-  final String id;
-  final String name;
-  final String phone; // Nouveau champ ajouté
-  final String logoUrl;
-  final List<String> photos;
-  final List<Course> courses;
-  final DateTime? createdAt;
-  final DateTime? lastLogin;
-  final DateTime? editedAt;
-
-  Club({
-    required this.id,
-    required this.name,
-    required this.phone,
-    required this.logoUrl,
-    required this.photos,
-    required this.courses,
-    this.createdAt,
-    this.lastLogin,
-    this.editedAt,
-  });
-
-  factory Club.fromMap(Map<String, dynamic> data, String id) {
-    return Club(
-      id: id,
-      name: data['name'] ?? 'Sans nom',
-      phone: data['phone'] ?? '', // Valeur par défaut
-      logoUrl: data['logoUrl'] ?? 'https://picsum.photos/200/300',
-      photos: List<String>.from(data['photos'] ?? []),
-      courses: [],
-      createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
-      lastLogin: (data['lastLogin'] as Timestamp?)?.toDate(),
-      editedAt: (data['editedAt'] as Timestamp?)?.toDate(),
-    );
-  }
-
-  Map<String, dynamic> toMap() {
-    return {
-      'name': name,
-      'phone': phone, // Ajouté dans la sérialisation
-      'logoUrl': logoUrl,
-      'photos': photos,
-      'courses': courses.map((e) => e.id).toList(), 'createdAt': createdAt,
-      'lastLogin': lastLogin,
-      'editedAt': editedAt,
-    };
-  }
-
-  @override
-  String toString() {
-    return 'Club(id: $id, name: $name, phone: $phone, courses: ${courses.length})';
-  }
-}
-
 class UserModel {
   final String id;
   final String name;
-  final List<String> photos;
-  final String phone;
+  final List<String>? photos;
+  final String? phone;
   final String email;
-  final String gender;
-
+  final String? gender;
   final DateTime? createdAt;
   final DateTime? lastLogin;
   final DateTime? editedAt;
   final String role;
+  final String? logoUrl;
+  final List<Course>? courses;
 
   UserModel({
     required this.id,
     required this.name,
-    required this.photos,
-    required this.phone,
+    this.photos,
+    this.phone,
     required this.email,
-    required this.gender,
-
+    this.gender,
+    this.courses,
+    this.logoUrl,
     required this.createdAt,
     required this.lastLogin,
     required this.editedAt,
@@ -213,10 +150,11 @@ class UserModel {
       id: id,
       name: data['name'] ?? '',
       phone: data['phone'] ?? '',
+      logoUrl: data['logoUrl'] ?? 'https://picsum.photos/200/300',
       photos: List<String>.from(data['photos'] ?? []),
       email: data['email'] ?? '',
       gender: data['gender'] ?? '',
-
+      courses: [],
       createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
       lastLogin: (data['lastLogin'] as Timestamp?)?.toDate(),
       editedAt: (data['editedAt'] as Timestamp?)?.toDate(),
@@ -228,10 +166,11 @@ class UserModel {
     return {
       'name': name,
       'phone': phone,
-      'logoUrl': photos,
+      'photos': photos,
       'email': email,
       'gender': gender,
-
+      'logoUrl': logoUrl,
+      'courses': (courses ?? []).map((e) => e.id).toList(),
       'createdAt': createdAt,
       'lastLogin': lastLogin,
       'editedAt': editedAt,
@@ -301,58 +240,6 @@ class Child {
   }
 }
 
-class Prof {
-  final String id;
-  final List<String> photos;
-  final String name;
-  final String email;
-  final String phone;
-  final DateTime? createdAt;
-  final DateTime? editedAt;
-
-  Prof({
-    required this.id,
-    required this.name,
-    required this.photos,
-    required this.email,
-    required this.phone,
-    this.createdAt,
-    this.editedAt,
-  });
-
-  factory Prof.fromMap(Map<String, dynamic> map) {
-    return Prof(
-      id: map['id'] ?? '',
-      name: map['name'] ?? '',
-      photos: List<String>.from(map['photos'] ?? []),
-      email: map['email'] ?? '',
-      phone: map['phone'] ?? '',
-      createdAt: (map['createdAt'] as Timestamp?)?.toDate(),
-      editedAt: (map['editedAt'] as Timestamp?)?.toDate(),
-    );
-  }
-
-  Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'name': name,
-      'photos': photos,
-      'email': email,
-      'phone': phone,
-      'createdAt': createdAt,
-      'editedAt': editedAt,
-    };
-  }
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is Prof && runtimeType == other.runtimeType && id == other.id;
-
-  @override
-  int get hashCode => id.hashCode;
-}
-
 class ImageItem {
   final File? file;
   final String? url;
@@ -382,3 +269,110 @@ const lesRoles = [
   'conseiller pédagogique',
   'autre',
 ];
+
+// class Prof {
+//   final String id;
+//   final List<String> photos;
+//   final String name;
+//   final String email;
+//   final String phone;
+//   final DateTime? createdAt;
+//   final DateTime? editedAt;
+//
+//   Prof({
+//     required this.id,
+//     required this.name,
+//     required this.photos,
+//     required this.email,
+//     required this.phone,
+//     this.createdAt,
+//     this.editedAt,
+//   });
+//
+//   factory Prof.fromMap(Map<String, dynamic> map) {
+//     return Prof(
+//       id: map['id'] ?? '',
+//       name: map['name'] ?? '',
+//       photos: List<String>.from(map['photos'] ?? []),
+//       email: map['email'] ?? '',
+//       phone: map['phone'] ?? '',
+//       createdAt: (map['createdAt'] as Timestamp?)?.toDate(),
+//       editedAt: (map['editedAt'] as Timestamp?)?.toDate(),
+//     );
+//   }
+//
+//   Map<String, dynamic> toMap() {
+//     return {
+//       'id': id,
+//       'name': name,
+//       'photos': photos,
+//       'email': email,
+//       'phone': phone,
+//       'createdAt': createdAt,
+//       'editedAt': editedAt,
+//     };
+//   }
+//
+//   @override
+//   bool operator ==(Object other) =>
+//       identical(this, other) ||
+//       other is Prof && runtimeType == other.runtimeType && id == other.id;
+//
+//   @override
+//   int get hashCode => id.hashCode;
+// }
+
+// class Club {
+//   final String id;
+//   final String name;
+//   final String phone; // Nouveau champ ajouté
+//   final String logoUrl;
+//   final List<String> photos;
+//   final List<Course> courses;
+//   final DateTime? createdAt;
+//   final DateTime? lastLogin;
+//   final DateTime? editedAt;
+//
+//   Club({
+//     required this.id,
+//     required this.name,
+//     required this.phone,
+//     required this.logoUrl,
+//     required this.photos,
+//     required this.courses,
+//     this.createdAt,
+//     this.lastLogin,
+//     this.editedAt,
+//   });
+//
+//   factory Club.fromMap(Map<String, dynamic> data, String id) {
+//     return Club(
+//       id: id,
+//       name: data['name'] ?? 'Sans nom',
+//       phone: data['phone'] ?? '', // Valeur par défaut
+//       logoUrl: data['logoUrl'] ?? 'https://picsum.photos/200/300',
+//       photos: List<String>.from(data['photos'] ?? []),
+//       courses: [],
+//       createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
+//       lastLogin: (data['lastLogin'] as Timestamp?)?.toDate(),
+//       editedAt: (data['editedAt'] as Timestamp?)?.toDate(),
+//     );
+//   }
+//
+//   Map<String, dynamic> toMap() {
+//     return {
+//       'name': name,
+//       'phone': phone, // Ajouté dans la sérialisation
+//       'logoUrl': logoUrl,
+//       'photos': photos,
+//       'courses': courses.map((e) => e.id).toList(), 'createdAt': createdAt,
+//       'lastLogin': lastLogin,
+//       'editedAt': editedAt,
+//     };
+//   }
+//
+//   @override
+//   String toString() {
+//     return 'Club(id: $id, name: $name, phone: $phone, courses: ${courses.length})';
+//   }
+// }

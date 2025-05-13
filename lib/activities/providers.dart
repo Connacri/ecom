@@ -192,3 +192,46 @@ class UserProvider with ChangeNotifier {
     }
   }
 }
+
+class CourseProvider with ChangeNotifier {
+  List<Course> _courses = [];
+  List<Schedule> _schedules = [];
+  List<UserModel> _professors = [];
+
+  List<Course> get courses => _courses;
+  List<Schedule> get schedules => _schedules;
+  List<UserModel> get professors => _professors;
+
+  void clearcorses() {
+    _courses.clear();
+    _schedules.clear();
+    notifyListeners();
+  }
+
+  void addCourse(Course course) {
+    _courses.add(course);
+    notifyListeners();
+  }
+
+  void deleteCourse(Course course) {
+    _courses.remove(course);
+    notifyListeners();
+  }
+
+  void addSchedule(Schedule schedule) {
+    _schedules.add(schedule);
+    notifyListeners();
+  }
+
+  void addProfessor(UserModel professor) {
+    _professors.add(professor);
+    notifyListeners();
+  }
+
+  void removeSchedule(Schedule schedule) {
+    _schedules.remove(schedule);
+    notifyListeners();
+  }
+
+  // Add other CRUD operations as needed
+}

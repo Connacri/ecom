@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -5,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../../auth/AuthProvider.dart';
 import '../../fonctions/AppLocalizations.dart';
 import '../../pages/MyApp.dart';
+import '../AddCourseScreen.dart';
 import '../ParentsScreen.dart';
 import '../modèles.dart';
 import '../providers.dart';
@@ -84,9 +86,7 @@ class _HomePageState extends State<HomePage> {
     }
 
     if (userProvider.user == null) {
-      return const Scaffold(
-        body: Center(child: Text('Aucun utilisateur trouvé')),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     final user = userProvider.user!;
@@ -108,16 +108,39 @@ class _HomePageState extends State<HomePage> {
 
     // Redirection en fonction du rôle
     switch (user.role.toLowerCase()) {
+      // Rôles parentaux et familiaux
       case 'parent':
+      case 'grand-parent':
+      case 'oncle/tante':
+      case 'frère/sœur':
+      case 'famille d’accueil':
         return ParentHomePage(user: user);
+
+      // Rôles éducatifs et enseignants
       case 'professeur':
       case 'prof':
+      case 'enseignant suppléant':
+      case 'conseiller pédagogique':
+      case 'éducateur':
+      case 'formateur':
       case 'coach':
-        return _ProfHomePage(user: user);
+      case 'animateur':
+      case 'moniteur':
+      case 'intervenant extérieur':
+      case 'médiateur':
+      case 'tuteur':
+        return _ProfHomePage(
+          user: user,
+        ); // Ou un autre page spécifique si nécessaire
+
+      // Structures organisationnelles
       case 'club':
       case 'association':
       case 'ecole':
         return _ClubHomePage(user: user);
+
+      // Rôle par défaut
+      case 'autre':
       default:
         return _UnknownRolePage(user: user);
     }
@@ -214,6 +237,18 @@ class _ProfHomePage extends StatelessWidget {
               style: Theme.of(context).textTheme.bodyMedium,
             ),
             Text('Rôle: ${user.role}'),
+            const SizedBox(height: 20),
+            // ElevatedButton(
+            //   onPressed: () async {
+            //     await Navigator.push(
+            //       context,
+            //       MaterialPageRoute(
+            //         builder: (context) => AddCourseScreen(club: user),
+            //       ),
+            //     );
+            //   },
+            //   child: Text('Ajouter un Cour'),
+            // ),
           ],
         ),
       ),
@@ -221,44 +256,408 @@ class _ProfHomePage extends StatelessWidget {
   }
 }
 
-// Page pour les clubs
-class _ClubHomePage extends StatelessWidget {
+class _ClubHomePage extends StatefulWidget {
   final UserModel user;
 
   const _ClubHomePage({required this.user});
 
   @override
+  _ClubHomePageState createState() => _ClubHomePageState();
+}
+
+class _ClubHomePageState extends State<_ClubHomePage> {
+  List<Course> _courses = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchCourses();
+  }
+
+  Future<void> _fetchCourses() async {
+    try {
+      final querySnapshot =
+          await FirebaseFirestore.instance
+              .collection('courses')
+              .where('clubId', isEqualTo: widget.user.id)
+              .get();
+
+      final courses =
+          querySnapshot.docs.map((doc) {
+            final data = doc.data();
+            return Course.fromMap(data, doc.id);
+          }).toList();
+
+      setState(() {
+        _courses = courses;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Erreur lors de la récupération des cours: ${e.toString()}',
+          ),
+        ),
+      );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Bienvenue ${user.name}')),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.sports_soccer, size: 50),
-            const SizedBox(height: 20),
-            Text(
-              'Interface Club',
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            Text('Rôle: ${user.role}'),
-          ],
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        title: Text(
+          'Bienvenue ${widget.user.name}',
+          // style: TextStyle(color: Colors.white),
         ),
+        //backgroundColor: Colors.blueAccent,
+        elevation: 0,
+        //  iconTheme: IconThemeData(color: Colors.white),
+        actions: [
+          IconButton(icon: Icon(Icons.refresh), onPressed: _fetchCourses),
+        ],
+      ),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              children: [
+                Icon(
+                  Icons.sports_soccer,
+                  size: 50, //color: Colors.blueAccent
+                ),
+                SizedBox(height: 10),
+                Text(
+                  'Interface Club',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(color: Colors.grey[700]),
+                ),
+                Text(
+                  'Rôle: ${widget.user.role}',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleMedium?.copyWith(color: Colors.grey[600]),
+                ),
+                SizedBox(height: 20),
+                ElevatedButton.icon(
+                  icon: Icon(Icons.add),
+                  label: Text('Ajouter un Cours'),
+                  onPressed: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => AddCourseScreen(),
+                      ),
+                    );
+                    _fetchCourses(); // Refresh the list of courses after adding a new one
+                  },
+                  style: ElevatedButton.styleFrom(
+                    //  backgroundColor: Colors.blueAccent,
+                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child:
+                _isLoading
+                    ? Center(child: CircularProgressIndicator())
+                    : _courses.isEmpty
+                    ? Center(
+                      child: Text(
+                        'Aucun cours trouvé',
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    )
+                    : ListView.builder(
+                      itemCount: _courses.length,
+                      itemBuilder: (context, index) {
+                        final course = _courses[index];
+                        return Card(
+                          margin: EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          elevation: 3,
+                          child: Padding(
+                            padding: EdgeInsets.all(16.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      course.name.toUpperCase(),
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    Row(
+                                      children: [
+                                        IconButton(
+                                          icon: Icon(
+                                            Icons.edit,
+                                            color: Colors.blue,
+                                          ),
+                                          onPressed: () => _editCourse(course),
+                                        ),
+                                        IconButton(
+                                          icon: Icon(
+                                            Icons.delete,
+                                            color: Colors.red,
+                                          ),
+                                          onPressed:
+                                              () => _deleteCourse(course.id),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(height: 8),
+                                Text(
+                                  'Description: ${course.description}',
+                                  style: TextStyle(color: Colors.grey[700]),
+                                ),
+                                SizedBox(height: 8),
+                                Text(
+                                  'Tranche d\'âge: ${course.ageRange}',
+                                  style: TextStyle(color: Colors.grey[700]),
+                                ),
+                                SizedBox(height: 8),
+                                Text(
+                                  'Horaires:',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.grey[800],
+                                  ),
+                                ),
+                                ...course.schedules.map((schedule) {
+                                  return Padding(
+                                    padding: EdgeInsets.symmetric(
+                                      vertical: 4.0,
+                                      horizontal: 8.0,
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          Icons.access_time,
+                                          size: 16,
+                                          color: Colors.grey,
+                                        ),
+                                        SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            '${schedule.days.join(", ")}: ${schedule.startTime.hour}:${schedule.startTime.minute.toString().padLeft(2, '0')} - ${schedule.endTime.hour}:${schedule.endTime.minute.toString().padLeft(2, '0')}',
+                                            style: TextStyle(
+                                              color: Colors.grey[600],
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }).toList(),
+                                SizedBox(height: 8),
+                                Text(
+                                  'Professeurs:',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.grey[800],
+                                  ),
+                                ),
+                                ...course.profIds.map((profId) {
+                                  return FutureBuilder<DocumentSnapshot>(
+                                    future:
+                                        FirebaseFirestore.instance
+                                            .collection('userModel')
+                                            .doc(profId)
+                                            .get(),
+                                    builder: (context, snapshot) {
+                                      if (snapshot.connectionState ==
+                                          ConnectionState.waiting) {
+                                        return Padding(
+                                          padding: EdgeInsets.symmetric(
+                                            vertical: 4.0,
+                                            horizontal: 8.0,
+                                          ),
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 1,
+                                          ),
+                                        );
+                                      }
+                                      if (snapshot.hasError) {
+                                        return Padding(
+                                          padding: EdgeInsets.symmetric(
+                                            vertical: 4.0,
+                                            horizontal: 8.0,
+                                          ),
+                                          child: Text(
+                                            'Erreur: ${snapshot.error}',
+                                            style: TextStyle(color: Colors.red),
+                                          ),
+                                        );
+                                      }
+                                      final profData =
+                                          snapshot.data!.data()
+                                              as Map<String, dynamic>;
+                                      final prof = UserModel.fromMap(
+                                        profData,
+                                        snapshot.data!.id,
+                                      );
+                                      return Padding(
+                                        padding: EdgeInsets.symmetric(
+                                          vertical: 4.0,
+                                          horizontal: 8.0,
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            Icon(
+                                              Icons.person,
+                                              size: 16,
+                                              color: Colors.grey,
+                                            ),
+                                            SizedBox(width: 8),
+                                            Text(
+                                              prof.name,
+                                              style: TextStyle(
+                                                color: Colors.grey[600],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    },
+                                  );
+                                }).toList(),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+          ),
+        ],
       ),
     );
+  }
+
+  void _editCourse(Course course) {
+    // Navigate to a screen where the course can be edited
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => AddCourseScreen()),
+    ).then((_) {
+      // Refresh the list of courses after editing
+      _fetchCourses();
+    });
+  }
+
+  Future<void> _deleteCourse(String courseId) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('courses')
+          .doc(courseId)
+          .delete();
+      // Refresh the list of courses after deletion
+      _fetchCourses();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erreur lors de la suppression: ${e.toString()}'),
+        ),
+      );
+    }
   }
 }
 
 // Page pour les rôles non reconnus
-class _UnknownRolePage extends StatelessWidget {
+class _UnknownRolePage extends StatefulWidget {
   final UserModel user;
 
   const _UnknownRolePage({required this.user});
 
   @override
+  State<_UnknownRolePage> createState() => _UnknownRolePageState();
+}
+
+class _UnknownRolePageState extends State<_UnknownRolePage> {
+  bool isSigningOut = false;
+  bool isLoading = false;
+  final AuthService _authService = AuthService();
+  User? _user = FirebaseAuth.instance.currentUser;
+  @override
   Widget build(BuildContext context) {
+    final childProvider = Provider.of<ChildProvider>(context);
+    // Logout handler with confirmation dialog
+    Future<void> _handleSignOut() async {
+      setState(() => isSigningOut = true);
+
+      try {
+        // On attend que les deux futures se terminent : la déconnexion + le délai
+
+        await Future.wait([
+          _authService.signOut(),
+          Future.delayed(const Duration(seconds: 2)), // 👈 délai imposé
+        ]);
+        Navigator.of(
+          context,
+        ).pushReplacement(MaterialPageRoute(builder: (ctx) => MyApp()));
+        setState(() {
+          _user = null;
+        });
+      } catch (e) {
+        print('Erreur déconnexion: $e');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              AppLocalizations.of(context).translate('connexErreur'),
+            ),
+          ),
+        );
+      } finally {
+        setState(() => isSigningOut = false);
+      }
+    }
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Rôle non reconnu')),
+      appBar: AppBar(
+        title: const Text('Rôle non reconnu'),
+        actions: [
+          IconButton(
+            onPressed:
+                isLoading
+                    ? null
+                    : () async {
+                      childProvider.clearCache();
+                      await _handleSignOut();
+                    },
+            icon:
+                isLoading
+                    ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                    : const Icon(Icons.logout),
+            tooltip: 'Logout',
+          ),
+        ],
+      ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -266,7 +665,7 @@ class _UnknownRolePage extends StatelessWidget {
             const Icon(Icons.warning, size: 50, color: Colors.orange),
             const SizedBox(height: 20),
             Text(
-              'Rôle "${user.role}" non pris en charge',
+              'Rôle "${widget.user.role}" non pris en charge',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
             const SizedBox(height: 20),
