@@ -217,15 +217,75 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
-class _ProfHomePage extends StatelessWidget {
+class _ProfHomePage extends StatefulWidget {
   final UserModel user;
 
   const _ProfHomePage({required this.user});
 
   @override
+  State<_ProfHomePage> createState() => _ProfHomePageState();
+}
+
+class _ProfHomePageState extends State<_ProfHomePage> {
+  User? _user = FirebaseAuth.instance.currentUser;
+  bool isSigningOut = false;
+  bool isLoading = false;
+  final AuthService _authService = AuthService();
+  Future<void> _handleSignOut() async {
+    setState(() => isSigningOut = true);
+
+    try {
+      // On attend que les deux futures se terminent : la déconnexion + le délai
+
+      await Future.wait([
+        _authService.signOut(),
+        Future.delayed(const Duration(seconds: 2)), // 👈 délai imposé
+      ]);
+      Navigator.of(
+        context,
+      ).pushReplacement(MaterialPageRoute(builder: (ctx) => MyApp()));
+      setState(() {
+        _user = null;
+      });
+    } catch (e) {
+      print('Erreur déconnexion: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppLocalizations.of(context).translate('connexErreur')),
+        ),
+      );
+    } finally {
+      setState(() => isSigningOut = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final childProvider = Provider.of<ChildProvider>(context);
     return Scaffold(
-      appBar: AppBar(title: Text('Bienvenue ${user.name}')),
+      appBar: AppBar(
+        title: Text('Bienvenue ${widget.user.name}'),
+        actions: [
+          IconButton(
+            onPressed:
+                isLoading
+                    ? null
+                    : () async {
+                      childProvider.clearCache();
+                      await _handleSignOut();
+                    },
+            icon:
+                isLoading
+                    ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                    : const Icon(Icons.logout),
+            tooltip: 'Logout',
+          ),
+        ],
+      ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -236,7 +296,7 @@ class _ProfHomePage extends StatelessWidget {
               'Interface Professeur',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
-            Text('Rôle: ${user.role}'),
+            Text('Rôle: ${widget.user.role}'),
             const SizedBox(height: 20),
             // ElevatedButton(
             //   onPressed: () async {
@@ -268,7 +328,10 @@ class _ClubHomePage extends StatefulWidget {
 class _ClubHomePageState extends State<_ClubHomePage> {
   List<Course> _courses = [];
   bool _isLoading = true;
-
+  User? _user = FirebaseAuth.instance.currentUser;
+  bool isSigningOut = false;
+  bool isLoading = false;
+  final AuthService _authService = AuthService();
   @override
   void initState() {
     super.initState();
@@ -307,8 +370,38 @@ class _ClubHomePageState extends State<_ClubHomePage> {
     }
   }
 
+  // Logout handler with confirmation dialog
+  Future<void> _handleSignOut() async {
+    setState(() => isSigningOut = true);
+
+    try {
+      // On attend que les deux futures se terminent : la déconnexion + le délai
+
+      await Future.wait([
+        _authService.signOut(),
+        Future.delayed(const Duration(seconds: 2)), // 👈 délai imposé
+      ]);
+      Navigator.of(
+        context,
+      ).pushReplacement(MaterialPageRoute(builder: (ctx) => MyApp()));
+      setState(() {
+        _user = null;
+      });
+    } catch (e) {
+      print('Erreur déconnexion: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppLocalizations.of(context).translate('connexErreur')),
+        ),
+      );
+    } finally {
+      setState(() => isSigningOut = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final childProvider = Provider.of<ChildProvider>(context);
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
@@ -321,6 +414,24 @@ class _ClubHomePageState extends State<_ClubHomePage> {
         //  iconTheme: IconThemeData(color: Colors.white),
         actions: [
           IconButton(icon: Icon(Icons.refresh), onPressed: _fetchCourses),
+          IconButton(
+            onPressed:
+                isLoading
+                    ? null
+                    : () async {
+                      childProvider.clearCache();
+                      await _handleSignOut();
+                    },
+            icon:
+                isLoading
+                    ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                    : const Icon(Icons.logout),
+            tooltip: 'Logout',
+          ),
         ],
       ),
       body: Column(
@@ -600,39 +711,38 @@ class _UnknownRolePageState extends State<_UnknownRolePage> {
   bool isLoading = false;
   final AuthService _authService = AuthService();
   User? _user = FirebaseAuth.instance.currentUser;
+  Future<void> _handleSignOut() async {
+    setState(() => isSigningOut = true);
+
+    try {
+      // On attend que les deux futures se terminent : la déconnexion + le délai
+
+      await Future.wait([
+        _authService.signOut(),
+        Future.delayed(const Duration(seconds: 2)), // 👈 délai imposé
+      ]);
+      Navigator.of(
+        context,
+      ).pushReplacement(MaterialPageRoute(builder: (ctx) => MyApp()));
+      setState(() {
+        _user = null;
+      });
+    } catch (e) {
+      print('Erreur déconnexion: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppLocalizations.of(context).translate('connexErreur')),
+        ),
+      );
+    } finally {
+      setState(() => isSigningOut = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final childProvider = Provider.of<ChildProvider>(context);
     // Logout handler with confirmation dialog
-    Future<void> _handleSignOut() async {
-      setState(() => isSigningOut = true);
-
-      try {
-        // On attend que les deux futures se terminent : la déconnexion + le délai
-
-        await Future.wait([
-          _authService.signOut(),
-          Future.delayed(const Duration(seconds: 2)), // 👈 délai imposé
-        ]);
-        Navigator.of(
-          context,
-        ).pushReplacement(MaterialPageRoute(builder: (ctx) => MyApp()));
-        setState(() {
-          _user = null;
-        });
-      } catch (e) {
-        print('Erreur déconnexion: $e');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              AppLocalizations.of(context).translate('connexErreur'),
-            ),
-          ),
-        );
-      } finally {
-        setState(() => isSigningOut = false);
-      }
-    }
 
     return Scaffold(
       appBar: AppBar(
