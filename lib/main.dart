@@ -1,4 +1,3 @@
-// main.dart
 import 'dart:io';
 
 import 'package:ecom/pages/MyApp.dart';

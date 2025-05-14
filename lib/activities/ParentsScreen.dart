@@ -1,5 +1,6 @@
 import 'package:ecom/activities/providers.dart';
 import 'package:ecom/activities/screens/childDetail.dart';
+import 'package:ecom/activities/screens/userHomePage.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -10,12 +11,11 @@ import '../pages/MyApp.dart';
 import 'AddChildScreen.dart';
 import 'AllButtons.dart';
 import 'data_populator.dart';
-import 'modèles.dart';
 
 class ParentHomePage extends StatefulWidget {
-  final UserModel user;
-
-  const ParentHomePage({Key? key, required this.user}) : super(key: key);
+  // final UserModel user;
+  //
+  // const ParentHomePage({Key? key, required this.user}) : super(key: key);
 
   @override
   _ParentHomePageState createState() => _ParentHomePageState();
@@ -30,12 +30,12 @@ class _ParentHomePageState extends State<ParentHomePage> {
   void initState() {
     super.initState();
     // Charge les enfants une seule fois au début
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<ChildProvider>(
-        context,
-        listen: false,
-      ).loadChildren(widget.user.id);
-    });
+    // WidgetsBinding.instance.addPostFrameCallback((_) {
+    //   Provider.of<ChildProvider>(
+    //     context,
+    //     listen: false,
+    //   ).loadChildren(widget.user.id);
+    // });
   }
 
   // Logout handler with confirmation dialog
@@ -70,75 +70,78 @@ class _ParentHomePageState extends State<ParentHomePage> {
   @override
   Widget build(BuildContext context) {
     final childProvider = Provider.of<ChildProvider>(context);
-
-    return Scaffold(
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        // leading: CircleAvatar(
-        //   backgroundImage: CachedNetworkImageProvider(widget.user.),
-        // ),
-        title: InkWell(
-          onTap:
-              () => Navigator.of(
-                context,
-              ).push(MaterialPageRoute(builder: (ctx) => AllButtons())),
-          child: Text('NextGen'),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed:
-                () => childProvider.loadChildren(
-                  widget.user.id,
-                  forceRefresh: true,
-                ),
-          ),
-          IconButton(
-            onPressed: () async {
-              await DataPopulatorClaude().populateData();
-            },
-            icon: Icon(Icons.add_road, color: Colors.deepPurple),
-          ),
-          IconButton(
-            onPressed:
-                isLoading
-                    ? null
-                    : () async {
-                      childProvider.clearCache();
-                      await _handleSignOut();
-                    },
-            icon:
-                isLoading
-                    ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                    : const Icon(Icons.logout),
-            tooltip: 'Logout',
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        child: Center(
-          child: Column(
-            children: [
-              Text(
-                '${widget.user.role} '.toUpperCase() +
-                    '${widget.user.name}'.toUpperCase(),
-                style: TextStyle(fontSize: 20),
+    final user = Provider.of<UserProvider>(context).user;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<ChildProvider>(context, listen: false).loadChildren(user!.id);
+    });
+    return user == null
+        ? CustomShimmerEffect()
+        : Scaffold(
+          appBar: AppBar(
+            automaticallyImplyLeading: false,
+            // leading: CircleAvatar(
+            //   backgroundImage: CachedNetworkImageProvider(widget.user.),
+            // ),
+            title: InkWell(
+              onTap:
+                  () => Navigator.of(
+                    context,
+                  ).push(MaterialPageRoute(builder: (ctx) => AllButtons())),
+              child: Text('NextGen'),
+            ),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.refresh),
+                onPressed:
+                    () =>
+                        childProvider.loadChildren(user.id, forceRefresh: true),
               ),
-              SizedBox(height: 20),
-              _buildBody(childProvider, widget.user),
+              IconButton(
+                onPressed: () async {
+                  await DataPopulatorClaude().populateData();
+                },
+                icon: Icon(Icons.add_road, color: Colors.deepPurple),
+              ),
+              IconButton(
+                onPressed:
+                    isLoading
+                        ? null
+                        : () async {
+                          childProvider.clearCache();
+                          await _handleSignOut();
+                        },
+                icon:
+                    isLoading
+                        ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                        : const Icon(Icons.logout),
+                tooltip: 'Logout',
+              ),
             ],
           ),
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _navigateToAddChild(context),
-        child: const Icon(Icons.add),
-      ),
-    );
+          body: SingleChildScrollView(
+            child: Center(
+              child: Column(
+                children: [
+                  Text(
+                    '${user.role} '.toUpperCase() +
+                        '${user.name}'.toUpperCase(),
+                    style: TextStyle(fontSize: 20),
+                  ),
+                  SizedBox(height: 20),
+                  _buildBody(childProvider, user),
+                ],
+              ),
+            ),
+          ),
+          floatingActionButton: FloatingActionButton(
+            onPressed: () => _navigateToAddChild(context),
+            child: const Icon(Icons.add),
+          ),
+        );
   }
 
   Widget _buildBody(ChildProvider provider, parent) {
@@ -389,11 +392,10 @@ class _ParentHomePageState extends State<ParentHomePage> {
   }
 
   Future<void> _navigateToAddChild(BuildContext context) async {
+    final user = Provider.of<UserProvider>(context).user;
     final result = await Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => AddChildScreen(parent: widget.user),
-      ),
+      MaterialPageRoute(builder: (context) => AddChildScreen(parent: user!)),
     );
 
     // Seulement rafraîchir si un nouvel enfant a été ajouté
@@ -401,7 +403,7 @@ class _ParentHomePageState extends State<ParentHomePage> {
       Provider.of<ChildProvider>(
         context,
         listen: false,
-      ).loadChildren(widget.user.id, forceRefresh: true);
+      ).loadChildren(user!.id, forceRefresh: true);
     }
   }
 }

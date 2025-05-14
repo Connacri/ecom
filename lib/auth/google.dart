@@ -3,8 +3,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:lottie/lottie.dart';
+import 'package:provider/provider.dart';
 
 import '../activities/modèles.dart';
+import '../activities/providers.dart';
 import '../activities/screens/userHomePage.dart';
 import '../fonctions/AppLocalizations.dart';
 import '../pages/MyApp.dart';
@@ -24,7 +26,7 @@ class _googleState extends State<google> {
   int currentPage = 0;
   final int pageSize = 10; // Nombre de résultats par page
   bool isSigningOut = false;
-  String? roleChoice;
+  // String? roleChoice;
   @override
   void initState() {
     super.initState();
@@ -32,88 +34,122 @@ class _googleState extends State<google> {
     _setupAuthListener();
   }
 
-  // Future<void> _handleSignIn() async {
+  // Future<void> _handleSignIn(/*String? role*/) async {
+  //   // if (role!.isEmpty) {
+  //   //   ScaffoldMessenger.of(
+  //   //     context,
+  //   //   ).showSnackBar(SnackBar(content: Text('Please select a role')));
+  //   //   return;
+  //   // }
+  //
   //   setState(() => isLoading = true);
   //
   //   try {
   //     User? user = await _authService.signInWithGoogle();
-  //     if (user != null) {
-  //       if (!mounted) return;
   //
+  //     if (user != null) {
+  //       final uid = user.uid;
+  //       final docRef = FirebaseFirestore.instance
+  //           .collection('userModel')
+  //           .doc(uid);
+  //       final docSnapshot = await docRef.get();
+  //
+  //       final userData = {
+  //         'name': user.displayName ?? 'New User',
+  //         'email': user.email ?? '',
+  //         'photos': user.photoURL != null ? [user.photoURL!] : [],
+  //         'role': 'role',
+  //         'lastLogin': FieldValue.serverTimestamp(),
+  //       };
+  //
+  //       if (!docSnapshot.exists) {
+  //         // New user - create document
+  //         await docRef.set({
+  //           ...userData,
+  //           'createdAt': FieldValue.serverTimestamp(),
+  //           'editedAt': FieldValue.serverTimestamp(),
+  //           'phone': '',
+  //           'gender': '',
+  //           'courses': [],
+  //         }, SetOptions(merge: true));
+  //       } else {
+  //         // Existing user - update last login
+  //         await docRef.update(userData);
+  //       }
+  //
+  //       if (!mounted) return;
   //       Navigator.pushReplacement(
-  //         // Force le rafraîchissement
   //         context,
-  //         MaterialPageRoute(builder: (ctx) => HomeScreenAct()),
+  //         MaterialPageRoute(builder: (ctx) => HomePage()),
   //       );
+  //     } else {
+  //       if (!mounted) return;
+  //       // ScaffoldMessenger.of(context).showSnackBar(
+  //       //   SnackBar(content: Text('Sign in failed - no user returned')),
+  //       // );
   //     }
+  //   } catch (e) {
+  //     if (!mounted) return;
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(content: Text('Error during sign in: ${e.toString()}')),
+  //     );
+  //     debugPrint('Erreur authentification: $e');
   //   } finally {
-  //     setState(() => isLoading = false);
+  //     if (mounted) {
+  //       setState(() => isLoading = false);
+  //     }
   //   }
   // }
-  Future<void> _handleSignIn(String role) async {
-    if (role.isEmpty) {
+  Future<void> _handleSignIn() async {
+    setState(() => isLoading = true);
+    try {
+      final user = await _authService.signInWithGoogle();
+      if (user == null) return;
+
+      final uid = user.uid;
+      final docRef = FirebaseFirestore.instance
+          .collection('userModel')
+          .doc(uid);
+      final snapshot = await docRef.get();
+
+      final data = {
+        'name': user.displayName ?? 'Utilisateur',
+        'email': user.email ?? '',
+        'photos': user.photoURL != null ? [user.photoURL!] : [],
+        'role': '',
+        'lastLogin': FieldValue.serverTimestamp(),
+      };
+
+      if (!snapshot.exists) {
+        await docRef.set({
+          ...data,
+          'createdAt': FieldValue.serverTimestamp(),
+          'editedAt': FieldValue.serverTimestamp(),
+          'phone': '',
+          'gender': '',
+          'courses': [],
+        }, SetOptions(merge: true));
+      } else {
+        await docRef.update(data);
+      }
+
+      // ➔ Rechargement explicite du provider
+      await Provider.of<UserProvider>(
+        context,
+        listen: false,
+      ).loadCurrentUser(uid);
+
+      // ➔ Navigation vers HomePage
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => HomePage()),
+      );
+    } catch (e) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Please select a role')));
-      return;
-    }
-
-    setState(() => isLoading = true);
-
-    try {
-      User? user = await _authService.signInWithGoogle();
-
-      if (user == null) {
-        final uid = user!.uid;
-        final docRef = FirebaseFirestore.instance
-            .collection('userModel')
-            .doc(uid);
-        final docSnapshot = await docRef.get();
-
-        final userData = {
-          'name': user.displayName ?? 'New User',
-          'email': user.email ?? '',
-          'photos': user.photoURL != null ? [user.photoURL!] : [],
-          'role': role,
-          'lastLogin': FieldValue.serverTimestamp(),
-        };
-
-        if (!docSnapshot.exists) {
-          // New user - create document
-          await docRef.set({
-            ...userData,
-            'createdAt': FieldValue.serverTimestamp(),
-            'editedAt': FieldValue.serverTimestamp(),
-            'phone': '',
-            'gender': '',
-            'courses': [],
-          });
-        } else {
-          // Existing user - update last login
-          await docRef.update(userData);
-        }
-
-        if (!mounted) return;
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (ctx) => HomePage()),
-        );
-      } else {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Sign in failed - no user returned')),
-        );
-      }
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error during sign in: ${e.toString()}')),
-      );
-      debugPrint('Erreur authentification: $e');
+      ).showSnackBar(SnackBar(content: Text('Erreur de connexion : $e')));
     } finally {
-      if (mounted) {
-        setState(() => isLoading = false);
-      }
+      if (mounted) setState(() => isLoading = false);
     }
   }
 
@@ -157,7 +193,7 @@ class _googleState extends State<google> {
                 ? CircularProgressIndicator()
                 : _user == null
                 ? _buildLoginUI()
-                : HomePage(), //HomeScreenAct(),
+                : _buildProfileUI(), //HomeScreenAct(),
         //_buildProfileUI(),
       ),
     );
@@ -182,7 +218,7 @@ class _googleState extends State<google> {
                     padding: const EdgeInsets.fromLTRB(18, 0, 18, 0),
 
                     child: Text(
-                      'En Utilisant votre compte google tu porra t\'authentifier\n\nqui je suis ?!'
+                      'En Utilisant votre compte google tu porra t\'authentifier\n\n' //\n\nqui je suis ?!'
                           .toUpperCase(),
                       textAlign: TextAlign.center,
                       style: const TextStyle(
@@ -210,16 +246,16 @@ class _googleState extends State<google> {
                   ),
                 ),
 
-            RoleSelectionDropdown(
-              onRoleSelected: (role) {
-                setState(() {
-                  roleChoice = role;
-                });
-                print('choicerole : $roleChoice');
-                print('role $role');
-              },
-            ),
-            Spacer(),
+            // RoleSelectionDropdown(
+            //   onRoleSelected: (role) {
+            //     setState(() {
+            //       roleChoice = role;
+            //     });
+            //     print('choicerole : $roleChoice');
+            //     print('role $role');
+            //   },
+            // ),
+            // Spacer(),
             ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.black54,
@@ -235,7 +271,9 @@ class _googleState extends State<google> {
                 style: TextStyle(fontSize: 24, color: Colors.white),
               ),
               onPressed:
-                  roleChoice != null ? () => _handleSignIn(roleChoice!) : null,
+                  //roleChoice != null ?
+                  () => _handleSignIn(/*roleChoice!*/),
+              //: null,
             ),
             SizedBox(height: 70),
           ],

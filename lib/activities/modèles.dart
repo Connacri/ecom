@@ -58,7 +58,8 @@ class Course {
   final String ageRange;
   final List<String> profIds;
   final DateTime? createdAt;
-
+  final DateTime? congeStart;
+  final DateTime? congeEnd;
   final DateTime? editedAt;
 
   Course({
@@ -71,7 +72,8 @@ class Course {
     required this.ageRange,
     required this.profIds,
     this.createdAt,
-
+    this.congeStart,
+    this.congeEnd,
     this.editedAt,
   });
   Map<String, dynamic> toMap() {
@@ -88,6 +90,7 @@ class Course {
       'createdAt': createdAt,
       'photos': photos,
       'editedAt': editedAt,
+      'congeStart': congeStart, 'congeEnd': congeEnd,
     };
   }
 
@@ -105,6 +108,8 @@ class Course {
               ?.map((e) => Schedule.fromMap(e))
               .toList() ??
           [],
+      congeEnd: (data['congeEnd'] as Timestamp?)?.toDate(),
+      congeStart: (data['congeStart'] as Timestamp?)?.toDate(),
       photos: List<String>.from(data['photos'] ?? []),
       ageRange: data['ageRange'] ?? 'Non spécifié',
       profIds: List<String>.from(data['profIds'] ?? []),
@@ -132,6 +137,9 @@ class UserModel {
   final String role;
   final String? logoUrl;
   final List<Course>? courses;
+  final bool? dispo;
+  final DateTime? congeStart;
+  final DateTime? congeEnd;
 
   UserModel({
     required this.id,
@@ -146,6 +154,9 @@ class UserModel {
     required this.lastLogin,
     required this.editedAt,
     required this.role,
+    this.dispo,
+    this.congeEnd,
+    this.congeStart,
   });
 
   factory UserModel.fromMap(Map<String, dynamic> data, String id) {
@@ -158,10 +169,13 @@ class UserModel {
       email: data['email'] ?? '',
       gender: data['gender'] ?? '',
       courses: [],
+      dispo: data['dispo'] ?? true,
       createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
       lastLogin: (data['lastLogin'] as Timestamp?)?.toDate(),
       editedAt: (data['editedAt'] as Timestamp?)?.toDate(),
       role: data['role'] ?? 'parent',
+      congeEnd: (data['congeEnd'] as Timestamp?)?.toDate(),
+      congeStart: (data['congeStart'] as Timestamp?)?.toDate(),
     );
   }
 
@@ -175,6 +189,9 @@ class UserModel {
       'logoUrl': logoUrl,
       'courses': (courses ?? []).map((e) => e.id).toList(),
       'createdAt': createdAt,
+      'dispo': dispo,
+      'congeStart': congeStart,
+      'congeEnd': congeEnd,
       'lastLogin': lastLogin,
       'editedAt': editedAt,
       'role': role,

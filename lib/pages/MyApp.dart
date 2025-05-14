@@ -172,56 +172,44 @@ class _AuthScreenState extends State<AuthScreen> {
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.active) {
-          User? user = snapshot.data;
-          if (user == null) {
-            // User is not authenticated, navigate to the Google page
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              Navigator.of(context).pushReplacement(
-                MaterialPageRoute(builder: (context) => google()),
-              );
-            });
-            return google();
-          } else {
-            // return Scaffold(
-            //   appBar: AppBar(),
-            //   body: Center(
-            //     child: Column(
-            //       children: [
-            //         Text('${user.displayName} Deja Autentifié'),
-            //         SizedBox(height: 100),
-            //         ElevatedButton(
-            //           onPressed: () async {
-            //             await FirebaseAuth.instance.signOut();
-            //           },
-            //           child: Text('Déconnexion'),
-            //         ),
-            //         SizedBox(height: 100),
-            //         ElevatedButton(
-            //           onPressed:
-            //               () => Navigator.of(context).push(
-            //                 MaterialPageRoute(
-            //                   builder: (ctx) => HomeScreenAct(),
-            //                 ),
-            //               ),
-            //           child: Text('Go to'),
-            //         ),
-            //       ],
-            //     ),
-            //   ),
-            // );
-            // Utilisateur authentifié, naviguer vers PageLance
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (ctx) => HomePage()),
-              ); //HomeScreenAct()));
-            });
-            return Container(); // Retourner un widget vide pendant la navigation
-          }
-        } else {
-          // Afficher un indicateur de chargement pendant la vérification de l'état d'authentification
-          return Scaffold(body: Center(child: CircularProgressIndicator()));
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        } else if (snapshot.hasError) {
+          return const Center(child: Text('some thig has errur'));
         }
+        if (snapshot.hasData) {
+          return HomePage();
+          // Scaffold(
+          //   body: Center(
+          //     child: Text('connecter ${snapshot.data!.displayName}'),
+          //   ),
+          // );
+        } else {
+          return google();
+        }
+        // if (snapshot.connectionState == ConnectionState.active) {
+        //   User? user = snapshot.data;
+        //   // if (user == null) {
+        //   //   // User is not authenticated, navigate to the Google page
+        //   //   WidgetsBinding.instance.addPostFrameCallback((_) {
+        //   //     Navigator.of(context).pushReplacement(
+        //   //       MaterialPageRoute(builder: (context) => google()),
+        //   //     );
+        //   //   });
+        //   //   return google();
+        //   // } else {
+        //   //   WidgetsBinding.instance.addPostFrameCallback((_) {
+        //   //     Navigator.of(context).push(
+        //   //       MaterialPageRoute(builder: (ctx) => HomePage()),
+        //   //     ); //HomeScreenAct()));
+        //   //   });
+        //   //   return Container(); // Retourner un widget vide pendant la navigation
+        //   // }
+        //   return HomePage();
+        // } else {
+        //   // Afficher un indicateur de chargement pendant la vérification de l'état d'authentification
+        //   return Scaffold(body: Center(child: CircularProgressIndicator()));
+        // }
       },
     );
   }
