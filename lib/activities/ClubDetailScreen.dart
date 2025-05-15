@@ -2,11 +2,12 @@
 // import 'package:flutter/material.dart';
 // import 'package:provider/provider.dart';
 //
+// import '../test/profile_provider.dart';
 // import 'ClubRegistrationScreen.dart';
 // import 'modèles.dart';
 //
 // class ClubDetailScreen extends StatelessWidget {
-//   final Club club;
+//   final UserModel club;
 //
 //   ClubDetailScreen({required this.club});
 //
@@ -21,7 +22,7 @@
 //             crossAxisAlignment: CrossAxisAlignment.start,
 //             children: [
 //               Image.network(
-//                 club.logoUrl,
+//                 club.logoUrl!,
 //                 width: double.infinity,
 //                 height: 200,
 //                 fit: BoxFit.cover,
@@ -36,7 +37,7 @@
 //                 spacing: 10,
 //                 runSpacing: 10,
 //                 children:
-//                     club.photos
+//                     club.photos!
 //                         .map(
 //                           (photoUrl) => Image.network(
 //                             photoUrl,
@@ -53,7 +54,7 @@
 //                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
 //               ),
 //               SizedBox(height: 10),
-//               ...club.courses.map(
+//               ...club.courses!.map(
 //                 (course) => Column(
 //                   crossAxisAlignment: CrossAxisAlignment.start,
 //                   children: [
@@ -110,20 +111,20 @@
 //   }
 //
 //   Widget _buildClubList(BuildContext context) {
-//     final clubProvider = Provider.of<ClubProvider>(context);
+//     final profileProvider = Provider.of<ProfileProvider>(context);
 //
-//     if (clubProvider.isLoading && !clubProvider.hasData) {
+//     if (profileProvider.isLoading) {
 //       return const Center(child: CircularProgressIndicator());
 //     }
 //
-//     if (clubProvider.clubs.isEmpty) {
+//     if (profileProvider.user.isEmpty) {
 //       return const Center(child: Text('Aucun club disponible'));
 //     }
 //
 //     return ListView.builder(
-//       itemCount: clubProvider.clubs.length,
+//       itemCount: profileProvider.users.length,
 //       itemBuilder: (context, index) {
-//         final club = clubProvider.clubs[index];
+//         final club = profileProvider.users[index];
 //         return Card(
 //           margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
 //           child: ListTile(
@@ -162,22 +163,22 @@
 //     );
 //   }
 //
-//   void _navigateToEditClub(BuildContext context, Club? club) {
+//   void _navigateToEditClub(BuildContext context, UserModel? user) {
 //     Navigator.push(
 //       context,
 //       MaterialPageRoute(
-//         builder: (context) => ClubRegistrationScreen(club: club),
+//         builder: (context) => ClubRegistrationScreen(club: user),
 //       ),
 //     );
 //   }
 //
-//   Future<void> _confirmDeleteClub(BuildContext context, Club club) async {
+//   Future<void> _confirmDeleteClub(BuildContext context, UserModel user) async {
 //     final confirmed = await showDialog<bool>(
 //       context: context,
 //       builder:
 //           (context) => AlertDialog(
 //             title: const Text('Confirmer la suppression'),
-//             content: Text('Voulez-vous vraiment supprimer ${club.name} ?'),
+//             content: Text('Voulez-vous vraiment supprimer ${user.name} ?'),
 //             actions: [
 //               TextButton(
 //                 onPressed: () => Navigator.pop(context, false),
@@ -196,13 +197,13 @@
 //
 //     if (confirmed == true) {
 //       try {
-//         await Provider.of<ClubProvider>(
+//         await Provider.of<ProfileProvider>(
 //           context,
 //           listen: false,
 //         ).deleteClub(club.id);
 //         ScaffoldMessenger.of(
 //           context,
-//         ).showSnackBar(SnackBar(content: Text('${club.name} a été supprimé')));
+//         ).showSnackBar(SnackBar(content: Text('${user.name} a été supprimé')));
 //       } catch (e) {
 //         ScaffoldMessenger.of(context).showSnackBar(
 //           SnackBar(content: Text('Erreur lors de la suppression: $e')),

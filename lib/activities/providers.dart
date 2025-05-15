@@ -169,18 +169,18 @@ class UserProvider with ChangeNotifier {
     _error = null;
 
     try {
-      if (firebaseUser != null) {
-        final userDoc =
-            await FirebaseFirestore.instance
-                .collection('userModel')
-                .doc(firebaseUser)
-                .get();
+      //   if (firebaseUser != null) {
+      final userDoc =
+          await FirebaseFirestore.instance
+              .collection('userModel')
+              .doc(firebaseUser)
+              .get();
 
-        if (userDoc.exists) {
-          _user = UserModel.fromMap(userDoc.data()!, userDoc.id);
-        } else {
-          _error = "Profil utilisateur non trouvé";
-        }
+      if (userDoc.exists) {
+        _user = UserModel.fromMap(userDoc.data()!, userDoc.id);
+        // } else {
+        //   _error = "Profil utilisateur non trouvé";
+        // }
       }
     } catch (e) {
       _error = "Erreur de chargement: ${e.toString()}";

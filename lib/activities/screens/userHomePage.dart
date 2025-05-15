@@ -33,6 +33,13 @@ class _HomePageState extends State<HomePage> {
         _loadInitialData();
       }
     });
+
+    if (_user != null) {
+      Provider.of<UserProvider>(
+        context,
+        listen: false,
+      ).loadCurrentUser(_user!.uid);
+    }
   }
 
   @override
@@ -143,20 +150,20 @@ class _HomePageState extends State<HomePage> {
       );
     }
 
-    //  Gestion spécifique pour les parents (chargement des enfants)
-    if (user.role.toLowerCase() == 'parent') {
-      if (childProvider.isLoading) {
-        return Scaffold(body: Center(child: CustomShimmerEffect()));
-      }
-
-      if (childProvider.error != null) {
-        return _buildErrorScreen(
-          childProvider.error!,
-          onRetry:
-              () => childProvider.loadChildren(user.id, forceRefresh: true),
-        );
-      }
-    }
+    // //  Gestion spécifique pour les parents (chargement des enfants)
+    // if (user.role.toLowerCase() == 'parent') {
+    //   if (childProvider.isLoading) {
+    //     return Scaffold(body: Center(child: CustomShimmerEffect()));
+    //   }
+    //
+    //   if (childProvider.error != null) {
+    //     return _buildErrorScreen(
+    //       childProvider.error!,
+    //       onRetry:
+    //           () => childProvider.loadChildren(user.id, forceRefresh: true),
+    //     );
+    //   }
+    // }
 
     // Redirection en fonction du rôle
     switch (user.role.toLowerCase()) {

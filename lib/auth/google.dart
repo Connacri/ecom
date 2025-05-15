@@ -140,10 +140,10 @@ class _googleState extends State<google> {
       ).loadCurrentUser(uid);
 
       // ➔ Navigation vers HomePage
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => HomePage()),
-      );
+      // Navigator.pushReplacement(
+      //   context,
+      //   MaterialPageRoute(builder: (_) => HomePage()),
+      // );
     } catch (e) {
       ScaffoldMessenger.of(
         context,
@@ -206,7 +206,7 @@ class _googleState extends State<google> {
         child: Column(
           children: [
             Lottie.asset(
-              'assets/lotties/google.json',
+              'assets/lotties/1 (129).json',
               height: 200,
               width: 200,
               fit: BoxFit.cover,

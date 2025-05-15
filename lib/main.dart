@@ -1,6 +1,8 @@
 import 'dart:io';
 
-import 'package:ecom/pages/MyApp.dart';
+import 'package:ecom/test/auth_service.dart';
+import 'package:ecom/test/myapp.dart';
+import 'package:ecom/test/profile_provider.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -11,7 +13,6 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
-import 'activities/providers.dart';
 import 'ads_provider.dart';
 import 'firebase_options.dart';
 
@@ -63,14 +64,27 @@ Future<void> main() async {
         // ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => LocalizationModel()),
-        ChangeNotifierProvider(create: (_) => AdsProvider()),
-        ChangeNotifierProvider(create: (_) => ChildProvider()),
-        // ChangeNotifierProvider(create: (_) => ClubProvider()),
-        ChangeNotifierProvider(create: (_) => UserProvider()),
-        ChangeNotifierProvider(create: (_) => CourseProvider()),
-        ChangeNotifierProvider(create: (_) => ProfProvider()),
+        // ChangeNotifierProvider(create: (_) => AdsProvider()),
+        // ChangeNotifierProvider(create: (_) => ChildProvider()),
+        // // ChangeNotifierProvider(create: (_) => ClubProvider()),
+        // ChangeNotifierProvider(create: (_) => UserProvider()),
+        // ChangeNotifierProvider(create: (_) => CourseProvider()),
+        // ChangeNotifierProvider(create: (_) => ProfProvider()),
+        ChangeNotifierProvider(create: (_) => AuthService()),
+        ChangeNotifierProxyProvider<AuthService, ProfileProvider>(
+          create: (ctx) => ProfileProvider(auth: ctx.read<AuthService>()),
+          update: (ctx, auth, previous) {
+            final provider = previous ?? ProfileProvider(auth: auth);
+            if (auth.user != null && auth.user?.uid != provider.user?.id) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                provider.updateAuth(auth);
+              });
+            }
+            return provider;
+          },
+        ),
       ],
-      child: MyApp(),
+      child: MyApp3(),
     ),
   );
 }
