@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
-import '../../test/widgets.dart';
 import '../modèles.dart';
 
 class ClubDetailScreen extends StatefulWidget {
@@ -16,6 +15,7 @@ class ClubDetailScreen extends StatefulWidget {
 class _ClubDetailScreenState extends State<ClubDetailScreen> {
   late Future<List<Course>> _coursesFuture;
   late Future<List<UserModel>> _profsFuture;
+  bool isLoading = false;
 
   @override
   void initState() {
@@ -90,7 +90,10 @@ class _ClubDetailScreenState extends State<ClubDetailScreen> {
                 children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [Text(widget.club.phone!), iconLogout()],
+                    children: [
+                      Text(widget.club.phone!),
+                      // iconLogout(context: context, isLoading: isLoading),
+                    ],
                   ),
                   SizedBox(height: 16),
                   Text(

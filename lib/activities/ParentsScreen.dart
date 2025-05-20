@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 
 import '../auth/AuthProvider.dart';
 import '../fonctions/AppLocalizations.dart';
+import '../fonctions/DeleteUserButton.dart';
 import '../pages/MyApp.dart';
 import 'AddChildScreen.dart';
 import 'AllButtons.dart';
@@ -51,7 +52,7 @@ class _ParentHomePageState extends State<ParentHomePage> {
       ]);
       Navigator.of(
         context,
-      ).pushReplacement(MaterialPageRoute(builder: (ctx) => MyApp()));
+      ).pushReplacement(MaterialPageRoute(builder: (ctx) => MyApp1()));
       setState(() {
         _user = null;
       });
@@ -71,9 +72,9 @@ class _ParentHomePageState extends State<ParentHomePage> {
   Widget build(BuildContext context) {
     final childProvider = Provider.of<ChildProvider>(context);
     final user = Provider.of<UserProvider>(context).user;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<ChildProvider>(context, listen: false).loadChildren(user!.id);
-    });
+    // WidgetsBinding.instance.addPostFrameCallback((_) {
+    //   Provider.of<ChildProvider>(context, listen: false).loadChildren(user!.id);
+    // });
     return user == null
         ? CustomShimmerEffect()
         : Scaffold(
@@ -120,6 +121,9 @@ class _ParentHomePageState extends State<ParentHomePage> {
                         : const Icon(Icons.logout),
                 tooltip: 'Logout',
               ),
+
+                  DeleteAccountButton(),
+
             ],
           ),
           body: SingleChildScrollView(
@@ -392,7 +396,7 @@ class _ParentHomePageState extends State<ParentHomePage> {
   }
 
   Future<void> _navigateToAddChild(BuildContext context) async {
-    final user = Provider.of<UserProvider>(context).user;
+    final user = Provider.of<UserProvider>(context, listen: false).user;
     final result = await Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => AddChildScreen(parent: user!)),

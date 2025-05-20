@@ -3,11 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:lottie/lottie.dart';
-import 'package:provider/provider.dart';
 
 import '../activities/modèles.dart';
-import '../activities/providers.dart';
-import '../activities/screens/userHomePage.dart';
 import '../fonctions/AppLocalizations.dart';
 import '../pages/MyApp.dart';
 import 'AuthProvider.dart';
@@ -116,7 +113,7 @@ class _googleState extends State<google> {
         'name': user.displayName ?? 'Utilisateur',
         'email': user.email ?? '',
         'photos': user.photoURL != null ? [user.photoURL!] : [],
-        'role': '',
+
         'lastLogin': FieldValue.serverTimestamp(),
       };
 
@@ -128,18 +125,26 @@ class _googleState extends State<google> {
           'phone': '',
           'gender': '',
           'courses': [],
+          'role': 'sero',
         }, SetOptions(merge: true));
       } else {
-        await docRef.update(data);
+        await docRef.set({
+          ...data,
+          'createdAt': FieldValue.serverTimestamp(),
+          'editedAt': FieldValue.serverTimestamp(),
+          'phone': '',
+          'gender': '',
+          'courses': [],
+        }, SetOptions(merge: true));
       }
 
-      // ➔ Rechargement explicite du provider
-      await Provider.of<UserProvider>(
-        context,
-        listen: false,
-      ).loadCurrentUser(uid);
+      // // ➔ Rechargement explicite du provider
+      // await Provider.of<UserProvider>(
+      //   context,
+      //   listen: false,
+      // ).loadCurrentUser(uid);
 
-      // ➔ Navigation vers HomePage
+      // // ➔ Navigation vers HomePage
       // Navigator.pushReplacement(
       //   context,
       //   MaterialPageRoute(builder: (_) => HomePage()),
@@ -166,7 +171,7 @@ class _googleState extends State<google> {
 
       Navigator.of(
         context,
-      ).pushReplacement(MaterialPageRoute(builder: (ctx) => MyApp()));
+      ).pushReplacement(MaterialPageRoute(builder: (ctx) => MyApp1()));
       setState(() {
         _user = null;
         _reportedNumbers.clear();
@@ -202,23 +207,27 @@ class _googleState extends State<google> {
   Widget _buildLoginUI() {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(15.0),
+        padding: const EdgeInsets.all(0.0),
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Lottie.asset(
-              'assets/lotties/1 (129).json',
-              height: 200,
-              width: 200,
-              fit: BoxFit.cover,
+            Container(
+              // color: Colors.deepPurple,
+              child: Lottie.asset(
+                'assets/lotties/boost (10).json',
+                // height: 200,
+                // width: 200,
+                fit: BoxFit.cover,
+              ),
             ),
-
+            //SizedBox(height: 20),
             AppLocalizations.of(context).locale.languageCode != 'ar'
                 ? Flexible(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(18, 0, 18, 0),
+                    padding: const EdgeInsets.fromLTRB(18, 0, 18, 50),
 
                     child: Text(
-                      'En Utilisant votre compte google tu porra t\'authentifier\n\n' //\n\nqui je suis ?!'
+                      'En Utilisant votre compte google tu pourra t\'authentifier' //\n\nqui je suis ?!'
                           .toUpperCase(),
                       textAlign: TextAlign.center,
                       style: const TextStyle(
@@ -231,7 +240,7 @@ class _googleState extends State<google> {
                 )
                 : Flexible(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(18, 18, 18, 0),
+                    padding: const EdgeInsets.fromLTRB(18, 0, 18, 0),
                     child: Text(
                       '${AppLocalizations.of(context).translate('usingGoogleToReport')}'
                           .toUpperCase(),
@@ -246,16 +255,6 @@ class _googleState extends State<google> {
                   ),
                 ),
 
-            // RoleSelectionDropdown(
-            //   onRoleSelected: (role) {
-            //     setState(() {
-            //       roleChoice = role;
-            //     });
-            //     print('choicerole : $roleChoice');
-            //     print('role $role');
-            //   },
-            // ),
-            // Spacer(),
             ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.black54,

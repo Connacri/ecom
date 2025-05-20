@@ -159,7 +159,7 @@ class _EditClubScreenState extends State<EditClubScreen> {
 
         Navigator.of(
           context,
-        ).pushReplacement(MaterialPageRoute(builder: (_) => MyApp()));
+        ).pushReplacement(MaterialPageRoute(builder: (_) => MyApp1()));
       } catch (e) {
         print('Erreur lors de la mise à jour: ${e.toString()}');
         ScaffoldMessenger.of(context).showSnackBar(
@@ -215,16 +215,43 @@ class _EditClubScreenState extends State<EditClubScreen> {
                 key: _formKey,
                 child: Column(
                   children: [
-                    CircleAvatar(
-                      radius: 50,
-                      backgroundImage:
-                          _selectedLogo != null
-                              ? FileImage(File(_selectedLogo!.path))
-                              : widget.club.logoUrl != null
-                              ? CachedNetworkImageProvider(widget.club.logoUrl!)
-                              : AssetImage('assets/default_logo.png')
-                                  as ImageProvider,
+                    Stack(
+                      children: [
+                        CircleAvatar(
+                          radius: 50,
+                          backgroundImage:
+                              _selectedLogo != null
+                                  ? FileImage(File(_selectedLogo!.path))
+                                  : widget.club.logoUrl != null
+                                  ? CachedNetworkImageProvider(
+                                    widget.club.logoUrl!,
+                                  )
+                                  : AssetImage('assets/default_logo.png')
+                                      as ImageProvider,
+                        ),
+                        Positioned(
+                          right: 0,
+                          bottom: 0,
+                          child: Container(
+                            height: 35,
+                            width: 35,
+                            decoration: BoxDecoration(
+                              color: Colors.blue, // Couleur de fond de l'icône
+                              shape: BoxShape.circle,
+                            ),
+                            child: IconButton(
+                              icon: Icon(
+                                Icons.edit,
+                                color: Colors.white, // Couleur de l'icône
+                                size: 15, // Taille de l'icône
+                              ),
+                              onPressed: _pickLogo,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
+
                     SizedBox(height: 16),
                     TextFormField(
                       controller: _nameController,

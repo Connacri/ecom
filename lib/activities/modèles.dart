@@ -127,7 +127,7 @@ class Course {
 class UserModel {
   final String id;
   final String name;
-  final List<String>? photos;
+  List<String>? photos;
   final String? phone;
   final String email;
   final String? gender;
@@ -135,7 +135,7 @@ class UserModel {
   final DateTime? lastLogin;
   final DateTime? editedAt;
   final String role;
-  final String? logoUrl;
+  String? logoUrl;
   final List<Course>? courses;
   final bool? dispo;
   final DateTime? congeStart;
@@ -173,7 +173,7 @@ class UserModel {
       createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
       lastLogin: (data['lastLogin'] as Timestamp?)?.toDate(),
       editedAt: (data['editedAt'] as Timestamp?)?.toDate(),
-      role: data['role'] ?? 'parent',
+      role: data['role'] ?? '',
       congeEnd: (data['congeEnd'] as Timestamp?)?.toDate(),
       congeStart: (data['congeStart'] as Timestamp?)?.toDate(),
     );

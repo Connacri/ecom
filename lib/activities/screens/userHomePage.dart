@@ -1,4 +1,6 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:ecom/activities/generated/profile3.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -6,10 +8,14 @@ import 'package:shimmer/shimmer.dart';
 
 import '../../auth/AuthProvider.dart';
 import '../../auth/google.dart';
+import '../../fonctions/DeleteUserButton.dart';
 import '../../pages/MyApp.dart';
 import '../AddCourseScreen.dart';
 import '../ParentsScreen.dart';
 import '../edition/EditClubScreen.dart';
+import '../generated/multiphoto/PhotoUploadPage.dart';
+import '../generated/profile1.dart';
+import '../generated/profile2.dart';
 import '../modèles.dart';
 import '../providers.dart';
 
@@ -23,23 +29,15 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   User? _user = FirebaseAuth.instance.currentUser;
   bool _isMounted = false;
+  String? roleChoice;
+  bool isSigningOut = false;
+  bool isLoading = false;
+  final AuthService _authService = AuthService();
+
   @override
   void initState() {
     super.initState();
     _isMounted = true;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Charge l'utilisateur et les enfants si parent
-      if (_isMounted) {
-        _loadInitialData();
-      }
-    });
-
-    if (_user != null) {
-      Provider.of<UserProvider>(
-        context,
-        listen: false,
-      ).loadCurrentUser(_user!.uid);
-    }
   }
 
   @override
@@ -48,164 +46,307 @@ class _HomePageState extends State<HomePage> {
     super.dispose();
   }
 
-  Future<void> _loadInitialData() async {
-    try {
-      final currentUser = FirebaseAuth.instance.currentUser!.uid;
-      final userProvider = Provider.of<UserProvider>(context, listen: false);
-      await userProvider.loadCurrentUser(currentUser);
+  Future<void> _handleSignOut() async {
+    if (!mounted) return; // Vérifier si le widget est toujours monté
 
-      if (_isMounted &&
-          userProvider.user != null &&
-          userProvider.user!.role.toLowerCase() == 'parent') {
-        final childProvider = Provider.of<ChildProvider>(
+    setState(() => isSigningOut = true);
+
+    try {
+      await Future.wait([
+        _authService.signOut(),
+        Future.delayed(const Duration(seconds: 2)),
+      ]);
+
+      if (mounted) {
+        Navigator.of(
           context,
-          listen: false,
-        );
-        await childProvider.loadChildren(currentUser);
+        ).pushReplacement(MaterialPageRoute(builder: (ctx) => MyApp1()));
+        setState(() {
+          _user = null;
+        });
       }
     } catch (e) {
-      if (_isMounted) {
-        // Gérer l'erreur si nécessaire
-        debugPrint('Erreur lors du chargement initial: $e');
+      if (mounted) {
+        // Gérer l'erreur
+      }
+    } finally {
+      if (mounted) {
+        setState(() => isSigningOut = false);
       }
     }
   }
 
-  Future<void> _retryLoading() async {
-    if (_isMounted) {
-      await _loadInitialData();
-    }
-  }
-
-  String? roleChoice;
-  bool isSigningOut = false;
-  bool isLoading = false;
-  final AuthService _authService = AuthService();
   @override
   Widget build(BuildContext context) {
-    final userProvider = Provider.of<UserProvider>(context);
-    final childProvider = Provider.of<ChildProvider>(context);
+    return StreamBuilder<DocumentSnapshot>(
+      stream:
+          FirebaseFirestore.instance
+              .collection('userModel')
+              .doc(_user!.uid)
+              .snapshots(),
+      builder: (context, userSnapshot) {
+        // Afficher un indicateur de chargement pendant la connexion
+        if (userSnapshot.connectionState == ConnectionState.waiting) {
+          return Scaffold(body: Center(child: CircularProgressIndicator()));
+        }
 
-    // // Gestion des états globaux
-    // if (userProvider.isLoading) {
-    //   return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    // }
+        // Gérer les erreurs
+        if (userSnapshot.hasError) {
+          return _buildErrorScreen(
+            userSnapshot.error.toString(),
+            onRetry: () {
+              // Logique de réessai si nécessaire
+            },
+          );
+        }
 
-    if (userProvider.error != null) {
-      return _buildErrorScreen(userProvider.error!, onRetry: _retryLoading);
-    }
-
-    if (userProvider.user == null) {
-      return Scaffold(body: Center(child: CustomShimmerEffect()));
-    }
-
-    final user = userProvider.user!;
-
-    if (!lesRoles.contains(user.role.toLowerCase())) {
-      return Scaffold(
-        body: Center(
-          child: Column(
-            children: [
-              Spacer(),
-              Text('Rôle non reconnu: ${user.role}'),
-              SizedBox(height: 50),
-              RoleSelectionDropdown(
-                onRoleSelected: (role) {
-                  setState(() {
-                    roleChoice = role;
-                  });
-                  print('choicerole : $roleChoice');
-                  print('role $role');
-                },
+        // Vérifier si les données existent
+        if (!userSnapshot.hasData || !userSnapshot.data!.exists) {
+          return Scaffold(
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text('Profil utilisateur non trouvé'),
+                  SizedBox(height: 50),
+                  IconButton(
+                    onPressed: () async {
+                      await _handleSignOut();
+                    },
+                    icon: Icon(Icons.logout),
+                  ),
+                ],
               ),
-              SizedBox(height: 50),
-              ElevatedButton(
-                onPressed: () async {
-                  final docRef = FirebaseFirestore.instance
-                      .collection('userModel')
-                      .doc(user.id);
+            ),
+          );
+        }
 
-                  await docRef
-                      .set({
-                        'createdAt': FieldValue.serverTimestamp(),
-                        'editedAt': FieldValue.serverTimestamp(),
-                        'phone': '',
-                        'gender': '',
-                        'courses': [],
-                        'role': roleChoice,
-                      }, SetOptions(merge: true))
-                      .then((value) {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(builder: (ctx) => HomePage()),
-                        );
-                      });
-                },
-                child: Text('Valider'),
+        // Extraire les données utilisateur
+        final userData = userSnapshot.data!.data() as Map<String, dynamic>;
+        final userModel = UserModel.fromMap(userData, userSnapshot.data!.id);
+        final roleBool = lesRoles.contains(userModel.role.toLowerCase());
+        print(
+          'roleBool =======================${userModel.role} ======> $roleBool',
+        );
+        // Gérer les rôles non reconnus
+        if (!lesRoles.contains(userModel.role.toLowerCase())) {
+          return Scaffold(
+            appBar: AppBar(
+              actions: [
+                IconButton(
+                  onPressed: isLoading ? null : _handleSignOut,
+                  icon:
+                      isLoading
+                          ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                          : const Icon(Icons.logout),
+                  tooltip: 'Logout',
+                ),
+                DeleteAccountButton(),
+              ],
+            ),
+            body: Center(
+              child: Column(
+                children: [
+                  Spacer(),
+                  Text('Rôle non reconnu: ${userModel.role}'),
+                  SizedBox(height: 50),
+                  RoleSelectionDropdown(
+                    onRoleSelected: (role) {
+                      if (mounted) {
+                        // setState(() {
+                        roleChoice = role;
+                        //     });
+                      }
+                    },
+                  ),
+                  ElevatedButton(
+                    onPressed: () async {
+                      final docRef = FirebaseFirestore.instance
+                          .collection('userModel')
+                          .doc(userModel.id);
+
+                      await docRef
+                          .set({
+                            'editedAt': FieldValue.serverTimestamp(),
+                            'role': roleChoice,
+                          }, SetOptions(merge: true))
+                          .then((value) async {
+                            // Recharger les données de l'utilisateur après la mise à jour du rôle
+                            final userProvider = Provider.of<UserProvider>(
+                              context,
+                              listen: false,
+                            );
+                            await userProvider.loadCurrentUser(userModel.id);
+
+                            // Naviguer vers HomePage après la mise à jour
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(builder: (ctx) => HomePage()),
+                            );
+                          });
+                    },
+                    child: Text('Valider'),
+                  ),
+                  SizedBox(height: 50),
+                  Spacer(),
+                ],
               ),
-              Spacer(),
-            ],
-          ),
-        ),
-      );
-    }
+            ),
+          );
+        }
 
-    // //  Gestion spécifique pour les parents (chargement des enfants)
-    // if (user.role.toLowerCase() == 'parent') {
-    //   if (childProvider.isLoading) {
-    //     return Scaffold(body: Center(child: CustomShimmerEffect()));
-    //   }
-    //
-    //   if (childProvider.error != null) {
-    //     return _buildErrorScreen(
-    //       childProvider.error!,
-    //       onRetry:
-    //           () => childProvider.loadChildren(user.id, forceRefresh: true),
-    //     );
-    //   }
-    // }
-
-    // Redirection en fonction du rôle
-    switch (user.role.toLowerCase()) {
-      // Rôles parentaux et familiaux
-      case 'parent':
-      case 'grand-parent':
-      case 'oncle/tante':
-      case 'frère/sœur':
-      case 'famille d’accueil':
-        return ParentHomePage();
-
-      // Rôles éducatifs et enseignants
-      case 'professeur':
-      case 'prof':
-      case 'enseignant suppléant':
-      case 'conseiller pédagogique':
-      case 'éducateur':
-      case 'formateur':
-      case 'coach':
-      case 'animateur':
-      case 'moniteur':
-      case 'intervenant extérieur':
-      case 'médiateur':
-      case 'tuteur':
-        return _ProfHomePage(); // Ou un autre page spécifique si nécessaire
-
-      // Structures organisationnelles
-      case 'club':
-      case 'association':
-      case 'ecole':
-        return _ClubHomePage();
-
-      // Rôle par défaut
-      case 'autre':
-      default:
-        return _UnknownRolePage();
-    }
-    // return _ClubHomePage();
+        // Rediriger en fonction du rôle
+        switch (userModel.role.toLowerCase()) {
+          case 'parent':
+          case 'grand-parent':
+          case 'oncle/tante':
+          case 'frère/sœur':
+          case 'famille d’accueil':
+            return ParentHomePage();
+            Scaffold(
+              appBar: AppBar(
+                actions: [
+                  IconButton(
+                    onPressed: isLoading ? null : _handleSignOut,
+                    icon:
+                        isLoading
+                            ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                            : const Icon(Icons.logout),
+                    tooltip: 'Logout',
+                  ),
+                  DeleteAccountButton(),
+                ],
+              ),
+              body: Center(
+                child: Text(
+                  'name: ' + userModel.name + 'role: ' + userModel.role,
+                ),
+              ),
+            );
+          case 'professeur':
+          case 'prof':
+          case 'enseignant suppléant':
+          case 'conseiller pédagogique':
+          case 'éducateur':
+          case 'formateur':
+          case 'coach':
+          case 'animateur':
+          case 'moniteur':
+          case 'intervenant extérieur':
+          case 'médiateur':
+          case 'tuteur':
+            return ProfHomePage();
+            Scaffold(
+              appBar: AppBar(
+                actions: [
+                  IconButton(
+                    onPressed: isLoading ? null : _handleSignOut,
+                    icon:
+                        isLoading
+                            ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                            : const Icon(Icons.logout),
+                    tooltip: 'Logout',
+                  ),
+                  DeleteAccountButton(),
+                ],
+              ),
+              body: Center(
+                child: Text(
+                  'name: ' + userModel.name + 'role: ' + userModel.role,
+                ),
+              ),
+            );
+          case 'club':
+          case 'association':
+          case 'ecole':
+            return _ClubHomePage();
+            Scaffold(
+              appBar: AppBar(
+                actions: [
+                  IconButton(
+                    onPressed: isLoading ? null : _handleSignOut,
+                    icon:
+                        isLoading
+                            ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                            : const Icon(Icons.logout),
+                    tooltip: 'Logout',
+                  ),
+                  DeleteAccountButton(),
+                ],
+              ),
+              body: Center(
+                child: Text(
+                  'name: ' + userModel.name + 'role: ' + userModel.role,
+                ),
+              ),
+            );
+          case 'autre':
+          default:
+            return _UnknownRolePage();
+            Scaffold(
+              appBar: AppBar(
+                actions: [
+                  IconButton(
+                    onPressed: isLoading ? null : _handleSignOut,
+                    icon:
+                        isLoading
+                            ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                            : const Icon(Icons.logout),
+                    tooltip: 'Logout',
+                  ),
+                  DeleteAccountButton(),
+                ],
+              ),
+              body: Center(
+                child: Text(
+                  'name: ' + userModel.name + 'role: ' + userModel.role,
+                ),
+              ),
+            );
+        }
+      },
+    );
   }
 
   Widget _buildErrorScreen(String error, {VoidCallback? onRetry}) {
     return Scaffold(
+      appBar: AppBar(
+        actions: [
+          IconButton(
+            onPressed: isLoading ? null : _handleSignOut,
+            icon:
+                isLoading
+                    ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                    : const Icon(Icons.logout),
+            tooltip: 'Logout',
+          ),
+          DeleteAccountButton(),
+        ],
+      ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -239,141 +380,6 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
-
-  // Logout handler with confirmation dialog
-  Future<void> _handleSignOut() async {
-    setState(() => isSigningOut = true);
-
-    try {
-      // On attend que les deux futures se terminent : la déconnexion + le délai
-      await Future.wait([
-        _authService.signOut(),
-        Future.delayed(const Duration(seconds: 2)), // 👈 délai imposé
-      ]);
-      if (_isMounted) {
-        Navigator.of(
-          context,
-        ).pushReplacement(MaterialPageRoute(builder: (ctx) => MyApp()));
-      }
-      setState(() {
-        _user = null;
-      });
-    } catch (e) {
-      if (_isMounted) {
-        // ScaffoldMessenger.of(context).showSnackBar(
-        //   SnackBar(
-        //     content: Text(
-        //       AppLocalizations.of(context).translate('connexErreur'),
-        //     ),
-        //   ),
-        // );
-      }
-    } finally {
-      setState(() => isSigningOut = false);
-    }
-  }
-}
-
-class _ProfHomePage extends StatefulWidget {
-  // final UserModel user;
-  //
-  // const _ProfHomePage({required this.user});
-
-  @override
-  State<_ProfHomePage> createState() => _ProfHomePageState();
-}
-
-class _ProfHomePageState extends State<_ProfHomePage> {
-  User? _user = FirebaseAuth.instance.currentUser;
-  bool isSigningOut = false;
-  bool isLoading = false;
-  final AuthService _authService = AuthService();
-  Future<void> _handleSignOut() async {
-    setState(() => isSigningOut = true);
-
-    try {
-      // On attend que les deux futures se terminent : la déconnexion + le délai
-
-      await Future.wait([
-        _authService.signOut(),
-        Future.delayed(const Duration(seconds: 2)), // 👈 délai imposé
-      ]);
-      Navigator.of(
-        context,
-      ).pushReplacement(MaterialPageRoute(builder: (ctx) => MyApp()));
-      setState(() {
-        _user = null;
-      });
-    } catch (e) {
-      // ScaffoldMessenger.of(context).showSnackBar(
-      //   SnackBar(
-      //     content: Text(AppLocalizations.of(context).translate('connexErreur')),
-      //   ),
-      // );
-    } finally {
-      setState(() => isSigningOut = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final childProvider = Provider.of<ChildProvider>(context);
-    final user = Provider.of<UserProvider>(context).user;
-
-    return user == null
-        ? CustomShimmerEffect()
-        : Scaffold(
-          appBar: AppBar(
-            title: Text('Bienvenue ${user.name}'),
-            actions: [
-              IconButton(
-                onPressed:
-                    isLoading
-                        ? null
-                        : () async {
-                          childProvider.clearCache();
-                          await _handleSignOut();
-                        },
-                icon:
-                    isLoading
-                        ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                        : const Icon(Icons.logout),
-                tooltip: 'Logout',
-              ),
-            ],
-          ),
-          body: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.school, size: 50),
-                const SizedBox(height: 20),
-                Text(
-                  'Interface Professeur',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-                Text('Rôle: ${user.role}'),
-                const SizedBox(height: 20),
-                // ElevatedButton(
-                //   onPressed: () async {
-                //     await Navigator.push(
-                //       context,
-                //       MaterialPageRoute(
-                //         builder: (context) => AddCourseScreen(club: user),
-                //       ),
-                //     );
-                //   },
-                //   child: Text('Ajouter un Cour'),
-                // ),
-              ],
-            ),
-          ),
-        );
-  }
 }
 
 class _ClubHomePage extends StatefulWidget {
@@ -395,6 +401,7 @@ class _ClubHomePageState extends State<_ClubHomePage> {
   @override
   void initState() {
     super.initState();
+
     _fetchCourses();
   }
 
@@ -443,7 +450,7 @@ class _ClubHomePageState extends State<_ClubHomePage> {
       ]);
       Navigator.of(
         context,
-      ).pushReplacement(MaterialPageRoute(builder: (ctx) => MyApp()));
+      ).pushReplacement(MaterialPageRoute(builder: (ctx) => MyApp1()));
       setState(() {
         _user = null;
       });
@@ -511,13 +518,7 @@ class _ClubHomePageState extends State<_ClubHomePage> {
                 },
               ),
               IconButton(
-                onPressed:
-                    isLoading
-                        ? null
-                        : () async {
-                          childProvider.clearCache();
-                          await _handleSignOut();
-                        },
+                onPressed: isLoading ? null : _handleSignOut,
                 icon:
                     isLoading
                         ? const SizedBox(
@@ -528,6 +529,7 @@ class _ClubHomePageState extends State<_ClubHomePage> {
                         : const Icon(Icons.logout),
                 tooltip: 'Logout',
               ),
+              DeleteAccountButton(),
             ],
           ),
           body: SingleChildScrollView(
@@ -537,44 +539,44 @@ class _ClubHomePageState extends State<_ClubHomePage> {
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
                     children: [
-                      Icon(Icons.sports_soccer, size: 50),
+                      CircleAvatar(
+                        radius: 50,
+
+                        backgroundImage:
+                            user.logoUrl != null
+                                ? CachedNetworkImageProvider(user.logoUrl!)
+                                : AssetImage('assets/default_logo.png')
+                                    as ImageProvider,
+                      ),
+
                       SizedBox(height: 10),
                       Text(
-                        'Interface Club',
+                        '${user.role} : ${user.name}'.toUpperCase(),
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           color: Colors.grey[700],
                         ),
                       ),
-                      Text(
-                        'Rôle: ${user.role}',
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(color: Colors.grey[600]),
-                      ),
-                      SizedBox(height: 20),
-                      // Display Club Details
-                      Text(
-                        'Nom: ${user.name}',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+
                       Text(
                         'Email: ${user.email}',
                         style: TextStyle(fontSize: 16),
                       ),
-                      Text(
-                        'Téléphone: ${user.phone ?? "Non spécifié"}',
-                        style: TextStyle(fontSize: 16),
-                      ),
                       SizedBox(height: 10),
-                      if (user.logoUrl != null)
-                        Image.network(
-                          user.logoUrl!,
-                          height: 100,
-                          fit: BoxFit.cover,
-                        ),
+
+                      user.phone == null || user.phone == ''
+                          ? SizedBox.shrink()
+                          : Text(
+                            'Téléphone: ${user.phone ?? "Non spécifié"}',
+                            style: TextStyle(fontSize: 16),
+                          ),
                       SizedBox(height: 10),
+                      // if (user.logoUrl != null)
+                      //   Image.network(
+                      //     user.logoUrl!,
+                      //     height: 100,
+                      //     fit: BoxFit.cover,
+                      //   ),
+                      // SizedBox(height: 10),
                       if (user.photos != null && user.photos!.isNotEmpty)
                         SizedBox(
                           height: 100,
@@ -618,6 +620,46 @@ class _ClubHomePageState extends State<_ClubHomePage> {
                   ),
                 ),
 
+                ElevatedButton.icon(
+                  onPressed:
+                      () => Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => PhotoUploadPage()),
+                      ),
+                  icon: const Icon(Icons.upload_file),
+                  label: const Text('Choisir & Uploader'),
+                ),
+                SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Spacer(),
+                    ElevatedButton(
+                      onPressed:
+                          () => Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => ProfHomePage()),
+                          ),
+                      child: Text('Profile1'),
+                    ),
+                    Spacer(),
+                    ElevatedButton(
+                      onPressed:
+                          () => Navigator.of(
+                            context,
+                          ).push(MaterialPageRoute(builder: (_) => Profile2())),
+                      child: Text('Profile2'),
+                    ),
+                    Spacer(),
+                    ElevatedButton(
+                      onPressed:
+                          () => Navigator.of(
+                            context,
+                          ).push(MaterialPageRoute(builder: (_) => Profile3())),
+                      child: Text('Profile2'),
+                    ),
+                    Spacer(),
+                  ],
+                ),
+                SizedBox(height: 20),
                 // Rest of your existing code for displaying courses
                 _isLoading
                     ? Center(child: CircularProgressIndicator())
@@ -912,7 +954,7 @@ class CustomShimmerEffect extends StatelessWidget {
                   Container(
                     width: double.infinity,
                     height: kToolbarHeight, // Hauteur de l'AppBar
-                    color: Colors.white,
+                    // color: Colors.white,
                   ),
                   SizedBox(height: 10),
                   Container(width: 100, height: 100, color: Colors.white),
@@ -1000,7 +1042,7 @@ class _UnknownRolePageState extends State<_UnknownRolePage> {
       ]);
       Navigator.of(
         context,
-      ).pushReplacement(MaterialPageRoute(builder: (ctx) => MyApp()));
+      ).pushReplacement(MaterialPageRoute(builder: (ctx) => MyApp1()));
       setState(() {
         _user = null;
       });
@@ -1020,7 +1062,10 @@ class _UnknownRolePageState extends State<_UnknownRolePage> {
     final childProvider = Provider.of<ChildProvider>(context);
     final user = Provider.of<UserProvider>(context).user;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<ChildProvider>(context, listen: false).loadChildren(user!.id);
+      Provider.of<ChildProvider>(
+        context,
+        listen: false,
+      ).loadChildren(_user!.uid);
     });
     return user == null
         ? CustomShimmerEffect()
@@ -1046,6 +1091,7 @@ class _UnknownRolePageState extends State<_UnknownRolePage> {
                         : const Icon(Icons.logout),
                 tooltip: 'Logout',
               ),
+              DeleteAccountButton(),
             ],
           ),
           body: Center(

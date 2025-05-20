@@ -9,14 +9,14 @@ import '../ads_provider.dart';
 import '../auth/google.dart';
 import '../fonctions/AppLocalizations.dart';
 
-class MyApp extends StatefulWidget {
-  const MyApp({super.key});
+class MyApp1 extends StatefulWidget {
+  const MyApp1({super.key});
 
   @override
-  State<MyApp> createState() => _MyAppState();
+  State<MyApp1> createState() => _MyApp1State();
 }
 
-class _MyAppState extends State<MyApp> {
+class _MyApp1State extends State<MyApp1> {
   @override
   Widget build(BuildContext context) {
     return PageLance();
@@ -175,41 +175,13 @@ class _AuthScreenState extends State<AuthScreen> {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         } else if (snapshot.hasError) {
-          return const Center(child: Text('some thig has errur'));
+          return const Center(child: Text('Erreur de connexion'));
         }
         if (snapshot.hasData) {
-          return HomePage();
-          // Scaffold(
-          //   body: Center(
-          //     child: Text('connecter ${snapshot.data!.displayName}'),
-          //   ),
-          // );
+          return HomePage(); // HomePage est recréé si l'utilisateur change
         } else {
           return google();
         }
-        // if (snapshot.connectionState == ConnectionState.active) {
-        //   User? user = snapshot.data;
-        //   // if (user == null) {
-        //   //   // User is not authenticated, navigate to the Google page
-        //   //   WidgetsBinding.instance.addPostFrameCallback((_) {
-        //   //     Navigator.of(context).pushReplacement(
-        //   //       MaterialPageRoute(builder: (context) => google()),
-        //   //     );
-        //   //   });
-        //   //   return google();
-        //   // } else {
-        //   //   WidgetsBinding.instance.addPostFrameCallback((_) {
-        //   //     Navigator.of(context).push(
-        //   //       MaterialPageRoute(builder: (ctx) => HomePage()),
-        //   //     ); //HomeScreenAct()));
-        //   //   });
-        //   //   return Container(); // Retourner un widget vide pendant la navigation
-        //   // }
-        //   return HomePage();
-        // } else {
-        //   // Afficher un indicateur de chargement pendant la vérification de l'état d'authentification
-        //   return Scaffold(body: Center(child: CircularProgressIndicator()));
-        // }
       },
     );
   }

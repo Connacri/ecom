@@ -43,10 +43,20 @@ class AuthService {
     }
   }
 
+  // Future<void> signOut() async {
+  //   await _googleSignIn.signOut();
+  //   await _auth.signOut();
+  //
+  //   childProvider?.clearCache(); // Vide le cache ici
+  // }
   Future<void> signOut() async {
-    await _googleSignIn.signOut();
+    await FirebaseAuth.instance.signOut();
     await _auth.signOut();
-    childProvider?.clearCache(); // Vide le cache ici
+    await GoogleSignIn().signOut();
+
+    childProvider?.clearCache();
+
+    // notifyListeners();
   }
 
   Future<bool> deleteUserAccountPermanently() async {

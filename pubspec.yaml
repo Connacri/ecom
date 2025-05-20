@@ -54,8 +54,8 @@ dependencies:
   faker: ^2.2.0
   icons_plus: ^5.0.0
   infinite_scroll_pagination: ^5.0.0
-  syncfusion_flutter_sliders: ^29.1.41
-
+  syncfusion_flutter_sliders: ^29.2.4
+  flutter_image_compress: ^2.4.0
 
 
 dev_dependencies:
@@ -149,5 +149,6 @@ flutter:
     - assets/logos/logoo.png
     - assets/flags/
     - assets/i18n/
-
+    - assets/photos/
+    - assets/photos/a (1).png
 

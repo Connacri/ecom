@@ -1,13 +1,11 @@
-import 'dart:io';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+import 'package:ecom/activities/data_populator.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 
+import 'generated/multiphoto/photo_provider.dart';
 import 'modèles.dart';
 import 'providers.dart';
 
@@ -39,6 +37,9 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
   bool _showAddProfForm = false;
   bool _showAllPhotos = false;
 
+  // Liste des URLs des photos sélectionnées
+  List<String> _selectedPhotoUrls = [];
+
   @override
   void initState() {
     super.initState();
@@ -66,35 +67,6 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     super.dispose();
   }
 
-  List<XFile> _selectedImages = [];
-
-  Future<void> _pickImages() async {
-    if (_selectedImages.length >= 9) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Vous ne pouvez pas sélectionner plus de 9 photos'),
-        ),
-      );
-      return;
-    }
-
-    final ImagePicker _picker = ImagePicker();
-    final List<XFile>? images = await _picker.pickMultiImage(
-      maxHeight: 1080,
-      maxWidth: 1920,
-      imageQuality: 85,
-    );
-
-    if (images != null) {
-      setState(() {
-        _selectedImages.addAll(images);
-        if (_selectedImages.length > 9) {
-          _selectedImages = _selectedImages.sublist(0, 9);
-        }
-      });
-    }
-  }
-
   void _filterProfs() {
     final query = _profSearchController.text.toLowerCase();
     setState(() {
@@ -106,25 +78,87 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     });
   }
 
+  // Future<void> _loadData() async {
+  //   setState(() => _isLoading = true);
+  //
+  //   try {
+  //     final clubsQuery = FirebaseFirestore.instance
+  //         .collection('userModel')
+  //         .where('role', isEqualTo: 'club');
+  //     final profsQuery = FirebaseFirestore.instance
+  //         .collection('userModel')
+  //         .where('role', isEqualTo: 'professeur');
+  //
+  //     final results = await Future.wait([clubsQuery.get(), profsQuery.get()]);
+  //
+  //     final clubs =
+  //         results[0].docs
+  //             .map((doc) => UserModel.fromMap(doc.data(), doc.id))
+  //             .toList();
+  //     final profs =
+  //         results[1].docs
+  //             .map((doc) => UserModel.fromMap(doc.data(), doc.id))
+  //             .toList();
+  //
+  //     setState(() {
+  //       _availableClubs = clubs;
+  //       _availableProfs = profs;
+  //       _filteredProfs = profs;
+  //       _selectedClub = clubs.isNotEmpty ? clubs.first : null;
+  //       _isLoading = false;
+  //     });
+  //   } catch (e) {
+  //     setState(() => _isLoading = false);
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(content: Text('Erreur de chargement: ${e.toString()}')),
+  //     );
+  //     debugPrint('Erreur lors du chargement des données: $e');
+  //   }
+  // }
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
 
     try {
+      // Récupérer les clubs
       final clubsQuery = FirebaseFirestore.instance
           .collection('userModel')
           .where('role', isEqualTo: 'club');
-      final profsQuery = FirebaseFirestore.instance
-          .collection('userModel')
-          .where('role', isEqualTo: 'professeur');
 
-      final results = await Future.wait([clubsQuery.get(), profsQuery.get()]);
+      // Liste des rôles de professeur
+      List<String> professeurRoles = [
+        'professeur',
+        'prof',
+        'enseignant suppléant',
+        'conseiller pédagogique',
+        'éducateur',
+        'formateur',
+        'coach',
+        'animateur',
+        'moniteur',
+        'intervenant extérieur',
+        'médiateur',
+        'tuteur',
+      ];
 
-      final clubs =
-          results[0].docs
+      // Récupérer les professeurs
+      List<UserModel> profs = [];
+      for (String role in professeurRoles) {
+        final profsQuery = FirebaseFirestore.instance
+            .collection('userModel')
+            .where('role', isEqualTo: role);
+
+        final profsSnapshot = await profsQuery.get();
+        profs.addAll(
+          profsSnapshot.docs
               .map((doc) => UserModel.fromMap(doc.data(), doc.id))
-              .toList();
-      final profs =
-          results[1].docs
+              .toList(),
+        );
+      }
+
+      // Récupérer les clubs
+      final clubsSnapshot = await clubsQuery.get();
+      final clubs =
+          clubsSnapshot.docs
               .map((doc) => UserModel.fromMap(doc.data(), doc.id))
               .toList();
 
@@ -143,57 +177,6 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
       debugPrint('Erreur lors du chargement des données: $e');
     }
   }
-
-  // Future<void> _addNewProf() async {
-  //   final name = _newProfNameController.text.trim();
-  //   final email = _newProfEmailController.text.trim();
-  //
-  //   if (name.isEmpty || email.isEmpty) {
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       SnackBar(content: Text('Veuillez remplir tous les champs')),
-  //     );
-  //     return;
-  //   }
-  //
-  //   try {
-  //     setState(() => _isLoading = true);
-  //     final profId = Uuid().v4();
-  //
-  //     final newProf = UserModel(
-  //       id: profId,
-  //       name: name,
-  //       email: email,
-  //       role: 'professeur',
-  //       createdAt: DateTime.now(),
-  //       lastLogin: DateTime.now(),
-  //       editedAt: DateTime.now(),
-  //       photos: [],
-  //     );
-  //
-  //     await FirebaseFirestore.instance
-  //         .collection('userModel')
-  //         .doc(profId)
-  //         .set(newProf.toMap());
-  //
-  //     Provider.of<CourseProvider>(context, listen: false).addProfessor(newProf);
-  //
-  //     setState(() {
-  //       _availableProfs.add(newProf);
-  //       _filteredProfs.add(newProf);
-  //       _selectedProfs.add(newProf);
-  //       _newProfNameController.clear();
-  //       _newProfEmailController.clear();
-  //       _showAddProfForm = false;
-  //       _isLoading = false;
-  //     });
-  //   } catch (e) {
-  //     setState(() => _isLoading = false);
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       SnackBar(content: Text('Erreur lors de la création: ${e.toString()}')),
-  //     );
-  //     debugPrint('Erreur création Coach/Professeur: $e');
-  //   }
-  // }
 
   Future<void> _addNewProf() async {
     final name = _newProfNameController.text.trim();
@@ -246,66 +229,86 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     }
   }
 
-  // Future<void> _submitForm() async {
-  //   if (!_formKey.currentState!.validate()) return;
-  //   if (_selectedClub == null) {
-  //     ScaffoldMessenger.of(
-  //       context,
-  //     ).showSnackBar(SnackBar(content: Text('Veuillez sélectionner un club')));
-  //     return;
-  //   }
-  //   if (Provider.of<CourseProvider>(context, listen: false).schedules.isEmpty) {
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       SnackBar(content: Text('Veuillez ajouter au moins un horaire')),
-  //     );
-  //     return;
-  //   }
-  //   if (_selectedProfs.isEmpty) {
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       SnackBar(
-  //         content: Text('Veuillez sélectionner au moins un Coach/Professeur'),
-  //       ),
-  //     );
-  //     return;
-  //   }
-  //
-  //   try {
-  //     final courseId = Uuid().v4();
-  //     final profIds = _selectedProfs.map((prof) => prof.id).toList();
-  //
-  //     final newCourse = Course(
-  //       id: courseId,
-  //       name: _nameController.text.trim(),
-  //       club: _selectedClub!,
-  //       description: _descriptionController.text.trim(),
-  //       schedules:
-  //           Provider.of<CourseProvider>(context, listen: false).schedules,
-  //       ageRange: '${_ageRange.start.round()}-${_ageRange.end.round()}',
-  //       profIds: profIds,
-  //     );
-  //
-  //     await FirebaseFirestore.instance.collection('courses').doc(courseId).set({
-  //       'name': newCourse.name,
-  //       'club': _selectedClub!.toMap(),
-  //       'clubId': _selectedClub!.id,
-  //       'description': newCourse.description,
-  //       'schedules': newCourse.schedules.map((s) => s.toMap()).toList(),
-  //       'ageRange': newCourse.ageRange,
-  //       'profIds': profIds,
-  //       'createdAt': FieldValue.serverTimestamp(),
-  //     });
-  //
-  //     Provider.of<CourseProvider>(context, listen: false).addCourse(newCourse);
-  //
-  //     if (!mounted) return;
-  //     Navigator.pop(context, true);
-  //   } catch (e) {
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       SnackBar(content: Text('Erreur lors de la création: ${e.toString()}')),
-  //     );
-  //     debugPrint('Erreur création cours: $e');
-  //   }
-  // }
+  // Utiliser le PhotoProvider pour sélectionner et télécharger des images
+  Future<void> _pickImages() async {
+    try {
+      // Utiliser le PhotoProvider pour récupérer les images depuis la galerie
+      await Provider.of<PhotoProvider>(
+        context,
+        listen: false,
+      ).pickAndUploadMultipleImages();
+
+      // Récupérer les URLs des images téléchargées
+      final photoProvider = Provider.of<PhotoProvider>(context, listen: false);
+
+      // Ajouter uniquement les nouvelles images à notre liste
+      if (photoProvider.images.isNotEmpty) {
+        setState(() {
+          // Ajouter les nouvelles URLs (on prend les plus récentes en premier)
+          for (var image in photoProvider.images) {
+            if (!_selectedPhotoUrls.contains(image['url'])) {
+              _selectedPhotoUrls.add(image['url']);
+            }
+
+            // Limiter à 9 photos maximum
+            if (_selectedPhotoUrls.length >= 9) break;
+          }
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Erreur lors de la sélection des images: ${e.toString()}',
+          ),
+        ),
+      );
+      debugPrint('Erreur lors de la sélection des images: $e');
+    }
+  }
+
+  // Prendre une photo avec l'appareil photo
+  Future<void> _takePhoto() async {
+    try {
+      // Utiliser le PhotoProvider pour prendre et télécharger une photo
+      await Provider.of<PhotoProvider>(
+        context,
+        listen: false,
+      ).takeAndUploadPhoto();
+
+      // Récupérer l'URL de la photo téléchargée
+      final photoProvider = Provider.of<PhotoProvider>(context, listen: false);
+
+      // Ajouter la nouvelle photo à notre liste
+      if (photoProvider.images.isNotEmpty) {
+        setState(() {
+          // Vérifier qu'on ne dépasse pas la limite de 9 photos
+          if (_selectedPhotoUrls.length < 9) {
+            // Ajouter la photo la plus récente (index 0)
+            String photoUrl = photoProvider.images[0]['url'];
+            if (!_selectedPhotoUrls.contains(photoUrl)) {
+              _selectedPhotoUrls.add(photoUrl);
+            }
+          }
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erreur lors de la prise de photo: ${e.toString()}'),
+        ),
+      );
+      debugPrint('Erreur lors de la prise de photo: $e');
+    }
+  }
+
+  // Supprimer une photo de la liste
+  void _removeImage(int index) {
+    setState(() {
+      _selectedPhotoUrls.removeAt(index);
+    });
+  }
+
   Future<void> _submitForm() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedClub == null) {
@@ -330,6 +333,8 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     }
 
     try {
+      setState(() => _isLoading = true);
+
       final courseId = Uuid().v4();
       final profIds = _selectedProfs.map((prof) => prof.id).toList();
 
@@ -344,11 +349,6 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
         profIds: profIds,
       );
 
-      List<String> photoURLs = [];
-      if (_selectedImages.isNotEmpty) {
-        photoURLs = await _uploadImages(courseId);
-      }
-
       await FirebaseFirestore.instance.collection('courses').doc(courseId).set({
         'name': newCourse.name,
         'club': _selectedClub!.toMap(),
@@ -357,7 +357,8 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
         'schedules': newCourse.schedules.map((s) => s.toMap()).toList(),
         'ageRange': newCourse.ageRange,
         'profIds': profIds,
-        'photos': photoURLs,
+        'photos':
+            _selectedPhotoUrls, // Utiliser directement les URLs des photos
         'createdAt': FieldValue.serverTimestamp(),
         'editedAt': FieldValue.serverTimestamp(),
       });
@@ -367,6 +368,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
       if (!mounted) return;
       Navigator.pop(context, true);
     } catch (e) {
+      setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Erreur lors de la création: ${e.toString()}')),
       );
@@ -541,31 +543,8 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     });
   }
 
-  Future<List<String>> _uploadImages(String courseId) async {
-    final FirebaseStorage _storage = FirebaseStorage.instance;
-    List<String> downloadURLs = [];
-
-    for (var image in _selectedImages) {
-      final Reference ref = _storage.ref().child(
-        'courses/$courseId/${image.name}',
-      );
-      await ref.putFile(File(image.path));
-      final String downloadURL = await ref.getDownloadURL();
-      downloadURLs.add(downloadURL);
-    }
-
-    return downloadURLs;
-  }
-
-  void _removeImage(int index) {
-    setState(() {
-      _selectedImages.removeAt(index);
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
-    //  Provider.of<CourseProvider>(context).clearcorses();
     if (_isLoading) {
       return Scaffold(
         appBar: AppBar(title: Text('Ajouter un Cours')),
@@ -574,7 +553,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text('Ajouter un Cours.'), elevation: 0),
+      appBar: AppBar(title: Text('Ajouter un Cours'), elevation: 0),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Form(
@@ -657,39 +636,44 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                 ],
               ),
               SizedBox(height: 24),
-              // Text('Club*', style: TextStyle(fontSize: 16)),
-              // DropdownButtonFormField<UserModel>(
-              //   value: _selectedClub,
-              //   isExpanded: true,
-              //   decoration: InputDecoration(
-              //     hintText: 'Sélectionner un club',
-              //     errorText:
-              //         _selectedClub == null ? 'Ce champ est obligatoire' : null,
-              //     border: OutlineInputBorder(),
-              //   ),
-              //   items:
-              //       _availableClubs.map((club) {
-              //         return DropdownMenuItem(
-              //           value: club,
-              //           child: Text(club.name),
-              //         );
-              //       }).toList(),
-              //   onChanged: (value) => setState(() => _selectedClub = value),
-              // ),
-              SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: _pickImages,
-                child: Text('Ajouter des photos'),
-                style: ElevatedButton.styleFrom(
-                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                ),
+              // Section des photos
+              Text(
+                'Photos du cours (max 9)',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
-              SizedBox(height: 24),
+              SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: _pickImages,
+                    icon: Icon(Icons.photo_library),
+                    label: Text('Galerie'),
+                    style: ElevatedButton.styleFrom(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 10,
+                      ),
+                    ),
+                  ),
+                  ElevatedButton.icon(
+                    onPressed: _takePhoto,
+                    icon: Icon(Icons.camera_alt),
+                    label: Text('Appareil photo'),
+                    style: ElevatedButton.styleFrom(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 10,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 16),
 
-              if (_selectedImages.isNotEmpty) ...[
-                SizedBox(height: 16),
+              if (_selectedPhotoUrls.isNotEmpty) ...[
                 Text(
-                  'Photos sélectionnées pour le cours:',
+                  'Photos sélectionnées:',
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
                 SizedBox(height: 8),
@@ -703,40 +687,44 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                   ),
                   itemCount:
                       _showAllPhotos
-                          ? _selectedImages.length + 1
-                          : (_selectedImages.length > 3
-                              ? 3
-                              : _selectedImages.length),
+                          ? _selectedPhotoUrls.length +
+                              (_selectedPhotoUrls.length < 9 ? 0 : 1)
+                          : (_selectedPhotoUrls.length > 3
+                              ? 4 // 3 images + voir plus
+                              : _selectedPhotoUrls.length),
                   itemBuilder: (context, index) {
-                    if (index == 2 &&
+                    if (index == 3 &&
                         !_showAllPhotos &&
-                        _selectedImages.length > 3) {
+                        _selectedPhotoUrls.length > 3) {
+                      // Bouton "Voir plus"
                       return GestureDetector(
                         onTap: () {
                           setState(() {
                             _showAllPhotos = true;
                           });
                         },
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            Image.file(
-                              File(_selectedImages[index].path),
-                              fit: BoxFit.cover,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.grey[200],
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.add, size: 30),
+                                Text(
+                                  '${_selectedPhotoUrls.length - 3} de plus',
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
                             ),
-                            Container(
-                              color: Colors.black54,
-                              child: Icon(
-                                Icons.add,
-                                color: Colors.white,
-                                size: 30,
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
                       );
                     } else if (_showAllPhotos &&
-                        index == _selectedImages.length) {
+                        index == _selectedPhotoUrls.length) {
+                      // Bouton "Voir moins"
                       return GestureDetector(
                         onTap: () {
                           setState(() {
@@ -744,27 +732,51 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                           });
                         },
                         child: Container(
-                          color: Colors.grey[200],
-                          child: Icon(
-                            Icons.remove,
-                            color: Colors.black,
-                            size: 30,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[200],
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.remove, size: 30),
+                                Text('Réduire', textAlign: TextAlign.center),
+                              ],
+                            ),
                           ),
                         ),
                       );
                     } else {
+                      // Image normale
                       return Stack(
                         children: [
-                          Image.file(
-                            File(_selectedImages[index].path),
-                            fit: BoxFit.cover,
+                          Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(8),
+                              image: DecorationImage(
+                                image: NetworkImage(_selectedPhotoUrls[index]),
+                                fit: BoxFit.cover,
+                              ),
+                            ),
                           ),
                           Positioned(
                             top: 0,
                             right: 0,
-                            child: IconButton(
-                              icon: Icon(Icons.delete, color: Colors.red),
-                              onPressed: () => _removeImage(index),
+                            child: GestureDetector(
+                              onTap: () => _removeImage(index),
+                              child: Container(
+                                padding: EdgeInsets.all(4),
+                                decoration: BoxDecoration(
+                                  color: Colors.red,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  Icons.close,
+                                  color: Colors.white,
+                                  size: 18,
+                                ),
+                              ),
                             ),
                           ),
                         ],
@@ -772,17 +784,6 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                     }
                   },
                 ),
-
-                // _showAllPhotos == true
-                //     ? TextButton(
-                //       onPressed: () {
-                //         setState(() {
-                //           _showAllPhotos = false;
-                //         });
-                //       },
-                //       child: Text('Reduire'),
-                //     )
-                //     : SizedBox.shrink(),
               ],
 
               SizedBox(height: 24),
@@ -856,53 +857,43 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                 ),
                 SizedBox(height: 16),
               ],
-              if (_filteredProfs.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 16.0),
-                  child: Text(
-                    'Aucun Coach/Professeur trouvé',
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                )
-              else
-                // Column(
-                //   children:
-                //       _filteredProfs.map((prof) {
-                //         final isSelected = _selectedProfs.contains(prof);
-                //         return CheckboxListTile(
-                //           title: Text(prof.name),
-                //           subtitle: Text(prof.email),
-                //           value: isSelected,
-                //           onChanged: (_) => _toggleProfSelection(prof),
-                //         );
-                //       }).toList(),
-                // ),
-                Consumer<ProfProvider>(
-                  builder: (context, professorsProvider, child) {
-                    if (professorsProvider.professors.isEmpty) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 16.0),
-                        child: Text(
-                          'Aucun Coach/Professeur trouvé',
-                          style: TextStyle(color: Colors.grey),
-                        ),
-                      );
-                    } else {
-                      return Column(
-                        children:
-                            professorsProvider.professors.map((prof) {
-                              final isSelected = _selectedProfs.contains(prof);
-                              return CheckboxListTile(
-                                title: Text(prof.name),
-                                subtitle: Text(prof.email),
-                                value: isSelected,
-                                onChanged: (_) => _toggleProfSelection(prof),
-                              );
-                            }).toList(),
-                      );
-                    }
-                  },
-                ),
+
+              // Affichage des profs filtrés
+              Consumer<ProfProvider>(
+                builder: (context, professorsProvider, child) {
+                  final profsToShow =
+                      _filteredProfs.isEmpty
+                          ? professorsProvider.professors
+                          : _filteredProfs;
+
+                  if (profsToShow.isEmpty) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 16.0),
+                      child: Text(
+                        'Aucun Coach/Professeur trouvé',
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    );
+                  } else {
+                    return Column(
+                      children:
+                          profsToShow.map((prof) {
+                            final isSelected = _selectedProfs.contains(prof);
+                            return CheckboxListTile(
+                              title: Text(
+                                prof.role.capitalize() +
+                                    ' ' +
+                                    prof.name.capitalize(),
+                              ),
+                              subtitle: Text(prof.email),
+                              value: isSelected,
+                              onChanged: (_) => _toggleProfSelection(prof),
+                            );
+                          }).toList(),
+                    );
+                  }
+                },
+              ),
 
               if (_selectedProfs.isNotEmpty) ...[
                 SizedBox(height: 16),
@@ -990,7 +981,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
 class EditCourseScreen extends StatefulWidget {
   final Course course;
 
-  const EditCourseScreen({required this.course});
+  const EditCourseScreen({Key? key, required this.course}) : super(key: key);
 
   @override
   _EditCourseScreenState createState() => _EditCourseScreenState();
@@ -1000,7 +991,6 @@ class _EditCourseScreenState extends State<EditCourseScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
-  final _ageRangeController = TextEditingController();
   final _profSearchController = TextEditingController();
   final _newProfNameController = TextEditingController();
   final _newProfEmailController = TextEditingController();
@@ -1008,105 +998,105 @@ class _EditCourseScreenState extends State<EditCourseScreen> {
   String? _ageRangeError;
   UserModel? _selectedClub;
   List<Schedule> _schedules = [];
-  List<UserModel> _availableClubs = [];
-  List<UserModel> _availableProfs = [];
   List<UserModel> _filteredProfs = [];
   List<UserModel> _selectedProfs = [];
-  bool _isLoading = true;
   bool _showAddProfForm = false;
 
   @override
   void initState() {
     super.initState();
-    _loadData();
-    _profSearchController.addListener(_filterProfs);
     _nameController.text = widget.course.name;
     _descriptionController.text = widget.course.description;
-    _ageRange = RangeValues(
-      double.parse(widget.course.ageRange.split('-')[0]),
-      double.parse(widget.course.ageRange.split('-')[1]),
-    );
-    _schedules = widget.course.schedules;
-    _selectedProfs =
-        _availableProfs
-            .where((prof) => widget.course.profIds.contains(prof.id))
-            .toList();
+    _initializeFormData();
+    _profSearchController.addListener(_filterProfs);
   }
 
   @override
   void dispose() {
     _nameController.dispose();
     _descriptionController.dispose();
-    _ageRangeController.dispose();
     _profSearchController.dispose();
     _newProfNameController.dispose();
     _newProfEmailController.dispose();
     super.dispose();
   }
 
+  void _initializeFormData() {
+    // Initialize age range
+    _ageRange = RangeValues(
+      double.parse(widget.course.ageRange.split('-')[0]),
+      double.parse(widget.course.ageRange.split('-')[1]),
+    );
+
+    // Initialize schedules
+    _schedules = widget.course.schedules;
+
+    // This will run after the build is complete to ensure Provider is available
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final courseProvider = Provider.of<CourseProvider>(
+        context,
+        listen: false,
+      );
+
+      // Set selected club
+      if (courseProvider.clubs.isNotEmpty) {
+        _selectedClub = courseProvider.clubs.firstWhere(
+          (club) => club.id == widget.course.club.id,
+          orElse: () => courseProvider.clubs.first,
+        );
+      }
+
+      // Set selected professors
+      _selectedProfs =
+          courseProvider.professors
+              .where((prof) => widget.course.profIds.contains(prof.id))
+              .toList();
+
+      // Initialize filtered professors list
+      _filterProfs();
+
+      setState(() {});
+    });
+  }
+
   void _filterProfs() {
     final query = _profSearchController.text.toLowerCase();
+    final courseProvider = Provider.of<CourseProvider>(context, listen: false);
+
     setState(() {
       _filteredProfs =
-          _availableProfs.where((prof) {
+          courseProvider.professors.where((prof) {
             return prof.name.toLowerCase().contains(query) ||
                 prof.email.toLowerCase().contains(query);
           }).toList();
     });
   }
 
-  Future<void> _loadData() async {
-    setState(() => _isLoading = true);
-
-    try {
-      final clubsQuery = FirebaseFirestore.instance
-          .collection('userModel')
-          .where('role', isEqualTo: 'club');
-      final profsQuery = FirebaseFirestore.instance
-          .collection('userModel')
-          .where('role', isEqualTo: 'professeur');
-
-      final results = await Future.wait([clubsQuery.get(), profsQuery.get()]);
-
-      final clubs =
-          results[0].docs
-              .map((doc) => UserModel.fromMap(doc.data(), doc.id))
-              .toList();
-      final profs =
-          results[1].docs
-              .map((doc) => UserModel.fromMap(doc.data(), doc.id))
-              .toList();
-
-      setState(() {
-        _availableClubs = clubs;
-        _availableProfs = profs;
-        _filteredProfs = profs;
-        _selectedClub = clubs.isNotEmpty ? clubs.first : null;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur de chargement: ${e.toString()}')),
-      );
-      debugPrint('Erreur lors du chargement des données: $e');
-    }
+  void _toggleProfSelection(UserModel prof) {
+    setState(() {
+      _selectedProfs.contains(prof)
+          ? _selectedProfs.remove(prof)
+          : _selectedProfs.add(prof);
+    });
   }
 
   Future<void> _submitForm() async {
     if (!_formKey.currentState!.validate()) return;
+
     if (_selectedClub == null) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Veuillez sélectionner un club')));
       return;
     }
+
     if (_schedules.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Veuillez ajouter au moins un horaire')),
       );
       return;
     }
+
     if (_selectedProfs.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -1116,42 +1106,27 @@ class _EditCourseScreenState extends State<EditCourseScreen> {
       return;
     }
 
-    try {
-      final profIds = _selectedProfs.map((prof) => prof.id).toList();
+    final courseProvider = Provider.of<CourseProvider>(context, listen: false);
+    final profIds = _selectedProfs.map((prof) => prof.id).toList();
 
-      final updatedCourse = Course(
-        id: widget.course.id,
-        name: _nameController.text.trim(),
-        club: _selectedClub!,
-        description: _descriptionController.text.trim(),
-        schedules: _schedules,
-        ageRange: '${_ageRange.start.round()}-${_ageRange.end.round()}',
-        profIds: profIds,
-      );
+    final updatedCourse = Course(
+      id: widget.course.id,
+      name: _nameController.text.trim(),
+      club: _selectedClub!,
+      description: _descriptionController.text.trim(),
+      schedules: _schedules,
+      ageRange: '${_ageRange.start.round()}-${_ageRange.end.round()}',
+      profIds: profIds,
+    );
 
-      await FirebaseFirestore.instance
-          .collection('courses')
-          .doc(widget.course.id)
-          .update({
-            'name': updatedCourse.name,
-            'club': _selectedClub!.toMap(),
-            'clubId': _selectedClub!.id,
-            'description': updatedCourse.description,
-            'schedules': updatedCourse.schedules.map((s) => s.toMap()).toList(),
-            'ageRange': updatedCourse.ageRange,
-            'profIds': profIds,
-            'editedAt': FieldValue.serverTimestamp(),
-          });
+    final success = await courseProvider.updateCourse(updatedCourse);
 
-      if (!mounted) return;
+    if (success && mounted) {
       Navigator.pop(context, true);
-    } catch (e) {
+    } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur lors de la mise à jour: ${e.toString()}'),
-        ),
+        SnackBar(content: Text('Erreur lors de la mise à jour du cours')),
       );
-      debugPrint('Erreur mise à jour cours: $e');
     }
   }
 
@@ -1166,277 +1141,269 @@ class _EditCourseScreenState extends State<EditCourseScreen> {
       return;
     }
 
-    try {
-      setState(() => _isLoading = true);
-      final profId = Uuid().v4();
+    final courseProvider = Provider.of<CourseProvider>(context, listen: false);
+    final newProf = await courseProvider.createProfessor(name, email);
 
-      final newProf = UserModel(
-        id: profId,
-        name: name,
-        email: email,
-        role: 'professeur',
-        createdAt: DateTime.now(),
-        lastLogin: DateTime.now(),
-        editedAt: DateTime.now(),
-        photos: [],
-      );
-
-      await FirebaseFirestore.instance
-          .collection('userModel')
-          .doc(profId)
-          .set(newProf.toMap());
-
-      Provider.of<CourseProvider>(context, listen: false).addProfessor(newProf);
-
+    if (newProf != null) {
       setState(() {
-        _availableProfs.add(newProf);
-        _filteredProfs.add(newProf);
         _selectedProfs.add(newProf);
         _newProfNameController.clear();
         _newProfEmailController.clear();
         _showAddProfForm = false;
-        _isLoading = false;
       });
-    } catch (e) {
-      setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur lors de la création: ${e.toString()}')),
-      );
-      debugPrint('Erreur création Coach/Professeur: $e');
-    }
-  }
 
-  void _toggleProfSelection(UserModel prof) {
-    setState(() {
-      _selectedProfs.contains(prof)
-          ? _selectedProfs.remove(prof)
-          : _selectedProfs.add(prof);
-    });
+      // Refresh filtered professors list
+      _filterProfs();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erreur lors de la création du Coach/Professeur'),
+        ),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return Scaffold(
-        appBar: AppBar(title: Text('Modifier un Cours')),
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
+    return Consumer<CourseProvider>(
+      builder: (context, courseProvider, child) {
+        if (courseProvider.isLoading) {
+          return Scaffold(
+            appBar: AppBar(title: Text('Modifier un Cours')),
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
 
-    return Scaffold(
-      appBar: AppBar(title: Text('Modifier un Cours')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            children: [
-              TextFormField(
-                controller: _nameController,
-                decoration: InputDecoration(
-                  labelText: 'Nom du Cours*',
-                  border: OutlineInputBorder(),
-                ),
-                validator:
-                    (value) =>
-                        value?.isEmpty ?? true
-                            ? 'Ce champ est obligatoire'
-                            : null,
-              ),
-              SizedBox(height: 16),
-              TextFormField(
-                controller: _descriptionController,
-                decoration: InputDecoration(
-                  labelText: 'Description',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              SizedBox(height: 16),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+        return Scaffold(
+          appBar: AppBar(title: Text('Modifier un Cours')),
+          body: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Form(
+              key: _formKey,
+              child: ListView(
                 children: [
-                  Text("Tranche d'âge*", style: TextStyle(fontSize: 16)),
-                  SizedBox(height: 8),
-                  RangeSlider(
-                    values: _ageRange,
-                    min: 3,
-                    max: 18,
-                    divisions: 15,
-                    labels: RangeLabels(
-                      '${_ageRange.start.round()} ans',
-                      '${_ageRange.end.round()} ans',
+                  TextFormField(
+                    controller: _nameController,
+                    decoration: InputDecoration(
+                      labelText: 'Nom du Cours*',
+                      border: OutlineInputBorder(),
                     ),
-                    onChanged: (RangeValues values) {
-                      setState(() {
-                        _ageRange = values;
-                        _ageRangeError = null;
-                      });
-                    },
-                    onChangeEnd: (values) {
-                      if (values.end - values.start < 1) {
-                        setState(() {
-                          _ageRangeError =
-                              'La plage doit être d\'au moins 1 an';
-                        });
-                      }
-                    },
+                    validator:
+                        (value) =>
+                            value?.isEmpty ?? true
+                                ? 'Ce champ est obligatoire'
+                                : null,
                   ),
-                  if (_ageRangeError != null)
-                    Text(
-                      _ageRangeError!,
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.error,
+                  SizedBox(height: 16),
+                  TextFormField(
+                    controller: _descriptionController,
+                    decoration: InputDecoration(
+                      labelText: 'Description',
+                      border: OutlineInputBorder(),
+                    ),
+                    maxLines: 3,
+                  ),
+                  SizedBox(height: 16),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text("Tranche d'âge*", style: TextStyle(fontSize: 16)),
+                      SizedBox(height: 8),
+                      RangeSlider(
+                        values: _ageRange,
+                        min: 3,
+                        max: 18,
+                        divisions: 15,
+                        labels: RangeLabels(
+                          '${_ageRange.start.round()} ans',
+                          '${_ageRange.end.round()} ans',
+                        ),
+                        onChanged: (RangeValues values) {
+                          setState(() {
+                            _ageRange = values;
+                            _ageRangeError = null;
+                          });
+                        },
+                        onChangeEnd: (values) {
+                          if (values.end - values.start < 1) {
+                            setState(() {
+                              _ageRangeError =
+                                  'La plage doit être d\'au moins 1 an';
+                            });
+                          }
+                        },
+                      ),
+                      if (_ageRangeError != null)
+                        Text(
+                          _ageRangeError!,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.error,
+                          ),
+                        )
+                      else
+                        Text(
+                          'De ${_ageRange.start.round()} à ${_ageRange.end.round()} ans',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                    ],
+                  ),
+                  SizedBox(height: 24),
+                  Text('Club*', style: TextStyle(fontSize: 16)),
+                  DropdownButtonFormField<UserModel>(
+                    value: _selectedClub,
+                    isExpanded: true,
+                    decoration: InputDecoration(
+                      hintText: 'Sélectionner un club',
+                      errorText:
+                          _selectedClub == null
+                              ? 'Ce champ est obligatoire'
+                              : null,
+                      border: OutlineInputBorder(),
+                    ),
+                    items:
+                        courseProvider.clubs.map((club) {
+                          return DropdownMenuItem(
+                            value: club,
+                            child: Text(club.name),
+                          );
+                        }).toList(),
+                    onChanged: (value) => setState(() => _selectedClub = value),
+                  ),
+                  SizedBox(height: 24),
+                  Text('Coach/Professeurs*', style: TextStyle(fontSize: 16)),
+                  TextFormField(
+                    controller: _profSearchController,
+                    decoration: InputDecoration(
+                      labelText: 'Rechercher un Coach/Professeur',
+                      prefixIcon: Icon(Icons.search),
+                      suffixIcon: IconButton(
+                        icon: Icon(Icons.clear),
+                        onPressed: () {
+                          _profSearchController.clear();
+                          _filterProfs();
+                        },
+                      ),
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed:
+                        () => setState(
+                          () => _showAddProfForm = !_showAddProfForm,
+                        ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          _showAddProfForm ? Icons.remove : Icons.add,
+                          size: 20,
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          _showAddProfForm
+                              ? 'Masquer le formulaire'
+                              : 'Ajouter un nouveau Coach/Professeur',
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (_showAddProfForm) ...[
+                    SizedBox(height: 16),
+                    TextFormField(
+                      controller: _newProfNameController,
+                      decoration: InputDecoration(
+                        labelText: 'Nom du Coach/Professeur*',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator:
+                          (value) =>
+                              value?.isEmpty ?? true
+                                  ? 'Ce champ est obligatoire'
+                                  : null,
+                    ),
+                    SizedBox(height: 8),
+                    TextFormField(
+                      controller: _newProfEmailController,
+                      decoration: InputDecoration(
+                        labelText: 'Email du Coach/Professeur*',
+                        border: OutlineInputBorder(),
+                      ),
+                      keyboardType: TextInputType.emailAddress,
+                      validator:
+                          (value) =>
+                              value?.isEmpty ?? true
+                                  ? 'Ce champ est obligatoire'
+                                  : null,
+                    ),
+                    SizedBox(height: 8),
+                    ElevatedButton(
+                      onPressed: _addNewProf,
+                      child: Text('Enregistrer le Coach/Professeur'),
+                      style: ElevatedButton.styleFrom(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 10,
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 16),
+                  ],
+                  if (_filteredProfs.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 16.0),
+                      child: Text(
+                        'Aucun Coach/Professeur trouvé',
+                        style: TextStyle(color: Colors.grey),
                       ),
                     )
                   else
-                    Text(
-                      'De ${_ageRange.start.round()} à ${_ageRange.end.round()} ans',
-                      style: Theme.of(context).textTheme.bodySmall,
+                    Column(
+                      children:
+                          _filteredProfs.map((prof) {
+                            final isSelected = _selectedProfs.contains(prof);
+                            return CheckboxListTile(
+                              title: Text(prof.name),
+                              subtitle: Text(prof.email),
+                              value: isSelected,
+                              onChanged: (_) => _toggleProfSelection(prof),
+                            );
+                          }).toList(),
                     ),
-                ],
-              ),
-              SizedBox(height: 24),
-              Text('Club*', style: TextStyle(fontSize: 16)),
-              DropdownButtonFormField<UserModel>(
-                value: _selectedClub,
-                isExpanded: true,
-                decoration: InputDecoration(
-                  hintText: 'Sélectionner un club',
-                  errorText:
-                      _selectedClub == null ? 'Ce champ est obligatoire' : null,
-                  border: OutlineInputBorder(),
-                ),
-                items:
-                    _availableClubs.map((club) {
-                      return DropdownMenuItem(
-                        value: club,
-                        child: Text(club.name),
-                      );
-                    }).toList(),
-                onChanged: (value) => setState(() => _selectedClub = value),
-              ),
-              SizedBox(height: 24),
-              Text('Coach/Professeurs*', style: TextStyle(fontSize: 16)),
-              TextFormField(
-                controller: _profSearchController,
-                decoration: InputDecoration(
-                  labelText: 'Rechercher un Coach/Professeur',
-                  prefixIcon: Icon(Icons.search),
-                  suffixIcon: IconButton(
-                    icon: Icon(Icons.clear),
-                    onPressed: () {
-                      _profSearchController.clear();
-                      _filterProfs();
-                    },
-                  ),
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              TextButton(
-                onPressed:
-                    () => setState(() => _showAddProfForm = !_showAddProfForm),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(_showAddProfForm ? Icons.remove : Icons.add, size: 20),
-                    SizedBox(width: 8),
+                  if (_selectedProfs.isNotEmpty) ...[
+                    SizedBox(height: 16),
                     Text(
-                      _showAddProfForm
-                          ? 'Masquer le formulaire'
-                          : 'Ajouter un nouveau Coach/Professeur',
+                      'Coachs/Professeurs sélectionnés:',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    Wrap(
+                      spacing: 8,
+                      children:
+                          _selectedProfs.map((prof) {
+                            return Chip(
+                              label: Text(prof.name),
+                              deleteIcon: Icon(Icons.close, size: 18),
+                              onDeleted: () => _toggleProfSelection(prof),
+                            );
+                          }).toList(),
                     ),
                   ],
-                ),
+                  SizedBox(height: 24),
+                  ElevatedButton(
+                    onPressed: _submitForm,
+                    child: Text('Mettre à jour le Cours'),
+                    style: ElevatedButton.styleFrom(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 10,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              if (_showAddProfForm) ...[
-                SizedBox(height: 16),
-                TextFormField(
-                  controller: _newProfNameController,
-                  decoration: InputDecoration(
-                    labelText: 'Nom du Coach/Professeur*',
-                    border: OutlineInputBorder(),
-                  ),
-                  validator:
-                      (value) =>
-                          value?.isEmpty ?? true
-                              ? 'Ce champ est obligatoire'
-                              : null,
-                ),
-                SizedBox(height: 8),
-                TextFormField(
-                  controller: _newProfEmailController,
-                  decoration: InputDecoration(
-                    labelText: 'Email du Coach/Professeur*',
-                    border: OutlineInputBorder(),
-                  ),
-                  keyboardType: TextInputType.emailAddress,
-                  validator:
-                      (value) =>
-                          value?.isEmpty ?? true
-                              ? 'Ce champ est obligatoire'
-                              : null,
-                ),
-                SizedBox(height: 8),
-                ElevatedButton(
-                  onPressed: _addNewProf,
-                  child: Text('Enregistrer le Coach/Professeur'),
-                  style: ElevatedButton.styleFrom(
-                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                  ),
-                ),
-                SizedBox(height: 16),
-              ],
-              if (_filteredProfs.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 16.0),
-                  child: Text(
-                    'Aucun Coach/Professeur trouvé',
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                )
-              else
-                Column(
-                  children:
-                      _filteredProfs.map((prof) {
-                        final isSelected = _selectedProfs.contains(prof);
-                        return CheckboxListTile(
-                          title: Text(prof.name),
-                          subtitle: Text(prof.email),
-                          value: isSelected,
-                          onChanged: (_) => _toggleProfSelection(prof),
-                        );
-                      }).toList(),
-                ),
-              if (_selectedProfs.isNotEmpty) ...[
-                SizedBox(height: 16),
-                Text(
-                  'Coachs/Professeurs sélectionnés:',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                Wrap(
-                  spacing: 8,
-                  children:
-                      _selectedProfs.map((prof) {
-                        return Chip(
-                          label: Text(prof.name),
-                          deleteIcon: Icon(Icons.close, size: 18),
-                          onDeleted: () => _toggleProfSelection(prof),
-                        );
-                      }).toList(),
-                ),
-              ],
-              SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: _submitForm,
-                child: Text('Mettre à jour le Cours'),
-                style: ElevatedButton.styleFrom(
-                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
