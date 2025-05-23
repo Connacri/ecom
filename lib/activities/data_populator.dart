@@ -192,7 +192,7 @@ class DataPopulator {
     return Course(
       id: courseId,
       name: courseName,
-      club: club,
+      clubId: users.id,
       description: description,
       schedules: schedules,
       ageRange: ageRange,
@@ -531,7 +531,7 @@ class DataPopulatorClaude {
     final course = Course(
       id: courseId,
       name: courseName,
-      club: club,
+      clubId: clubs.id,
       description: description,
       schedules: schedules,
       ageRange: ageRange,

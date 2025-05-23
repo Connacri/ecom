@@ -1,6 +1,9 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecom/activities/data_populator.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
@@ -29,13 +32,13 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
   RangeValues _ageRange = const RangeValues(5, 18);
   String? _ageRangeError;
   UserModel? _selectedClub;
-  List<UserModel> _availableClubs = [];
   List<UserModel> _availableProfs = [];
   List<UserModel> _filteredProfs = [];
   List<UserModel> _selectedProfs = [];
   bool _isLoading = true;
   bool _showAddProfForm = false;
   bool _showAllPhotos = false;
+  List<XFile> _selectedPhotos = []; // Define and initialize the list
 
   // Liste des URLs des photos sélectionnées
   List<String> _selectedPhotoUrls = [];
@@ -52,7 +55,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     super.didChangeDependencies();
     // Schedule the call to clearcorses after the build phase is complete
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<CourseProvider>(context, listen: false).clearcorses();
+      Provider.of<CourseProvider2>(context, listen: false).clearcorses();
     });
   }
 
@@ -163,7 +166,6 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
               .toList();
 
       setState(() {
-        _availableClubs = clubs;
         _availableProfs = profs;
         _filteredProfs = profs;
         _selectedClub = clubs.isNotEmpty ? clubs.first : null;
@@ -231,40 +233,11 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
 
   // Utiliser le PhotoProvider pour sélectionner et télécharger des images
   Future<void> _pickImages() async {
-    try {
-      // Utiliser le PhotoProvider pour récupérer les images depuis la galerie
-      await Provider.of<PhotoProvider>(
-        context,
-        listen: false,
-      ).pickAndUploadMultipleImages();
-
-      // Récupérer les URLs des images téléchargées
-      final photoProvider = Provider.of<PhotoProvider>(context, listen: false);
-
-      // Ajouter uniquement les nouvelles images à notre liste
-      if (photoProvider.images.isNotEmpty) {
-        setState(() {
-          // Ajouter les nouvelles URLs (on prend les plus récentes en premier)
-          for (var image in photoProvider.images) {
-            if (!_selectedPhotoUrls.contains(image['url'])) {
-              _selectedPhotoUrls.add(image['url']);
-            }
-
-            // Limiter à 9 photos maximum
-            if (_selectedPhotoUrls.length >= 9) break;
-          }
-        });
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Erreur lors de la sélection des images: ${e.toString()}',
-          ),
-        ),
-      );
-      debugPrint('Erreur lors de la sélection des images: $e');
-    }
+    await Provider.of<PhotoProvider>(
+      context,
+      listen: false,
+    ).pickMultipleImages();
+    setState(() {}); // Pour rafraîchir la preview des images si besoin
   }
 
   // Prendre une photo avec l'appareil photo
@@ -309,70 +282,51 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     });
   }
 
-  Future<void> _submitForm() async {
+  Future<void> _submitCourse() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_selectedClub == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Veuillez sélectionner un club')));
-      return;
-    }
-    if (Provider.of<CourseProvider>(context, listen: false).schedules.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Veuillez ajouter au moins un horaire')),
-      );
-      return;
-    }
-    if (_selectedProfs.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Veuillez sélectionner au moins un Coach/Professeur'),
-        ),
-      );
-      return;
-    }
+
+    setState(() => _isLoading = true);
 
     try {
-      setState(() => _isLoading = true);
+      final photoProvider = Provider.of<PhotoProvider>(context, listen: false);
 
+      // Upload des images sélectionnées
+      await photoProvider.uploadPickedImages();
+
+      // Récupérer les URLs
+      final uploadedUrls = photoProvider.uploadedImageUrls;
+
+      // Créer l'objet Course (exemple simplifié)
       final courseId = Uuid().v4();
-      final profIds = _selectedProfs.map((prof) => prof.id).toList();
+      final newCourse = {
+        'id': courseId,
+        'name': _nameController.text.trim(),
+        'description': _descriptionController.text.trim(),
+        'photos': uploadedUrls,
+        'createdAt': DateTime.now(),
+        // ... autres champs ici
+      };
 
-      final newCourse = Course(
-        id: courseId,
-        name: _nameController.text.trim(),
-        club: _selectedClub!,
-        description: _descriptionController.text.trim(),
-        schedules:
-            Provider.of<CourseProvider>(context, listen: false).schedules,
-        ageRange: '${_ageRange.start.round()}-${_ageRange.end.round()}',
-        profIds: profIds,
-      );
+      await FirebaseFirestore.instance
+          .collection('courses')
+          .doc(courseId)
+          .set(newCourse);
 
-      await FirebaseFirestore.instance.collection('courses').doc(courseId).set({
-        'name': newCourse.name,
-        'club': _selectedClub!.toMap(),
-        'clubId': _selectedClub!.id,
-        'description': newCourse.description,
-        'schedules': newCourse.schedules.map((s) => s.toMap()).toList(),
-        'ageRange': newCourse.ageRange,
-        'profIds': profIds,
-        'photos':
-            _selectedPhotoUrls, // Utiliser directement les URLs des photos
-        'createdAt': FieldValue.serverTimestamp(),
-        'editedAt': FieldValue.serverTimestamp(),
-      });
+      // Nettoyer les images sélectionnées
+      photoProvider.clear();
 
-      Provider.of<CourseProvider>(context, listen: false).addCourse(newCourse);
-
-      if (!mounted) return;
-      Navigator.pop(context, true);
+      // Feedback & retour
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Cours ajouté avec succès')));
+      Navigator.pop(context);
     } catch (e) {
+      debugPrint('Erreur ajout cours: $e');
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Erreur: $e')));
+    } finally {
       setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur lors de la création: ${e.toString()}')),
-      );
-      debugPrint('Erreur création cours: $e');
     }
   }
 
@@ -520,7 +474,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                           createdAt: DateTime.now(),
                         );
 
-                        Provider.of<CourseProvider>(
+                        Provider.of<CourseProvider2>(
                           context,
                           listen: false,
                         ).addSchedule(newSchedule);
@@ -642,6 +596,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
               SizedBox(height: 8),
+
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
@@ -785,7 +740,154 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                   },
                 ),
               ],
+              ///////////////////////////////////////////////////////////////////////////////
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: _pickImages,
+                    icon: Icon(Icons.photo_library),
+                    label: Text('Galerie'),
+                    style: ElevatedButton.styleFrom(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 10,
+                      ),
+                    ),
+                  ),
+                  ElevatedButton.icon(
+                    onPressed: _takePhoto,
+                    icon: Icon(Icons.camera_alt),
+                    label: Text('Appareil photo'),
+                    style: ElevatedButton.styleFrom(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 10,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 16),
 
+              if (_selectedPhotos.isNotEmpty) ...[
+                Text(
+                  'Photos sélectionnées:',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                SizedBox(height: 8),
+                GridView.builder(
+                  shrinkWrap: true,
+                  physics: NeverScrollableScrollPhysics(),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 8,
+                  ),
+                  itemCount:
+                      _showAllPhotos
+                          ? _selectedPhotos.length +
+                              (_selectedPhotos.length < 9 ? 0 : 1)
+                          : (_selectedPhotos.length > 3
+                              ? 4 // 3 images + voir plus
+                              : _selectedPhotos.length),
+                  itemBuilder: (context, index) {
+                    if (index == 3 &&
+                        !_showAllPhotos &&
+                        _selectedPhotos.length > 3) {
+                      // Bouton "Voir plus"
+                      return GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _showAllPhotos = true;
+                          });
+                        },
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.grey[200],
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.add, size: 30),
+                                Text(
+                                  '${_selectedPhotos.length - 3} de plus',
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    } else if (_showAllPhotos &&
+                        index == _selectedPhotos.length) {
+                      // Bouton "Voir moins"
+                      return GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _showAllPhotos = false;
+                          });
+                        },
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.grey[200],
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.remove, size: 30),
+                                Text('Réduire', textAlign: TextAlign.center),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    } else {
+                      // Image normale
+                      return Stack(
+                        children: [
+                          Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(8),
+                              image: DecorationImage(
+                                image: FileImage(
+                                  File(_selectedPhotos[index].path),
+                                ),
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            top: 0,
+                            right: 0,
+                            child: GestureDetector(
+                              onTap: () => _removeImage(index),
+                              child: Container(
+                                padding: EdgeInsets.all(4),
+                                decoration: BoxDecoration(
+                                  color: Colors.red,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  Icons.close,
+                                  color: Colors.white,
+                                  size: 18,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    }
+                  },
+                ),
+              ],
+
+              ///////////////////////////////////////////////////////////////////////////////
               SizedBox(height: 24),
               Text('Coach/Professeurs*', style: TextStyle(fontSize: 16)),
               TextFormField(
@@ -921,7 +1023,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                   padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                 ),
               ),
-              Consumer<CourseProvider>(
+              Consumer<CourseProvider2>(
                 builder: (context, provider, child) {
                   if (provider.schedules.isNotEmpty) {
                     return Column(
@@ -964,7 +1066,8 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
               ),
               SizedBox(height: 24),
               ElevatedButton(
-                onPressed: _submitForm,
+                onPressed: _submitCourse,
+                //_submitForm,
                 child: Text('Ajouter le Cours'),
                 style: ElevatedButton.styleFrom(
                   padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
@@ -974,436 +1077,6 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
           ),
         ),
       ),
-    );
-  }
-}
-
-class EditCourseScreen extends StatefulWidget {
-  final Course course;
-
-  const EditCourseScreen({Key? key, required this.course}) : super(key: key);
-
-  @override
-  _EditCourseScreenState createState() => _EditCourseScreenState();
-}
-
-class _EditCourseScreenState extends State<EditCourseScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _descriptionController = TextEditingController();
-  final _profSearchController = TextEditingController();
-  final _newProfNameController = TextEditingController();
-  final _newProfEmailController = TextEditingController();
-  RangeValues _ageRange = const RangeValues(5, 18);
-  String? _ageRangeError;
-  UserModel? _selectedClub;
-  List<Schedule> _schedules = [];
-  List<UserModel> _filteredProfs = [];
-  List<UserModel> _selectedProfs = [];
-  bool _showAddProfForm = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _nameController.text = widget.course.name;
-    _descriptionController.text = widget.course.description;
-    _initializeFormData();
-    _profSearchController.addListener(_filterProfs);
-  }
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _descriptionController.dispose();
-    _profSearchController.dispose();
-    _newProfNameController.dispose();
-    _newProfEmailController.dispose();
-    super.dispose();
-  }
-
-  void _initializeFormData() {
-    // Initialize age range
-    _ageRange = RangeValues(
-      double.parse(widget.course.ageRange.split('-')[0]),
-      double.parse(widget.course.ageRange.split('-')[1]),
-    );
-
-    // Initialize schedules
-    _schedules = widget.course.schedules;
-
-    // This will run after the build is complete to ensure Provider is available
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final courseProvider = Provider.of<CourseProvider>(
-        context,
-        listen: false,
-      );
-
-      // Set selected club
-      if (courseProvider.clubs.isNotEmpty) {
-        _selectedClub = courseProvider.clubs.firstWhere(
-          (club) => club.id == widget.course.club.id,
-          orElse: () => courseProvider.clubs.first,
-        );
-      }
-
-      // Set selected professors
-      _selectedProfs =
-          courseProvider.professors
-              .where((prof) => widget.course.profIds.contains(prof.id))
-              .toList();
-
-      // Initialize filtered professors list
-      _filterProfs();
-
-      setState(() {});
-    });
-  }
-
-  void _filterProfs() {
-    final query = _profSearchController.text.toLowerCase();
-    final courseProvider = Provider.of<CourseProvider>(context, listen: false);
-
-    setState(() {
-      _filteredProfs =
-          courseProvider.professors.where((prof) {
-            return prof.name.toLowerCase().contains(query) ||
-                prof.email.toLowerCase().contains(query);
-          }).toList();
-    });
-  }
-
-  void _toggleProfSelection(UserModel prof) {
-    setState(() {
-      _selectedProfs.contains(prof)
-          ? _selectedProfs.remove(prof)
-          : _selectedProfs.add(prof);
-    });
-  }
-
-  Future<void> _submitForm() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    if (_selectedClub == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Veuillez sélectionner un club')));
-      return;
-    }
-
-    if (_schedules.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Veuillez ajouter au moins un horaire')),
-      );
-      return;
-    }
-
-    if (_selectedProfs.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Veuillez sélectionner au moins un Coach/Professeur'),
-        ),
-      );
-      return;
-    }
-
-    final courseProvider = Provider.of<CourseProvider>(context, listen: false);
-    final profIds = _selectedProfs.map((prof) => prof.id).toList();
-
-    final updatedCourse = Course(
-      id: widget.course.id,
-      name: _nameController.text.trim(),
-      club: _selectedClub!,
-      description: _descriptionController.text.trim(),
-      schedules: _schedules,
-      ageRange: '${_ageRange.start.round()}-${_ageRange.end.round()}',
-      profIds: profIds,
-    );
-
-    final success = await courseProvider.updateCourse(updatedCourse);
-
-    if (success && mounted) {
-      Navigator.pop(context, true);
-    } else if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur lors de la mise à jour du cours')),
-      );
-    }
-  }
-
-  Future<void> _addNewProf() async {
-    final name = _newProfNameController.text.trim();
-    final email = _newProfEmailController.text.trim();
-
-    if (name.isEmpty || email.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Veuillez remplir tous les champs')),
-      );
-      return;
-    }
-
-    final courseProvider = Provider.of<CourseProvider>(context, listen: false);
-    final newProf = await courseProvider.createProfessor(name, email);
-
-    if (newProf != null) {
-      setState(() {
-        _selectedProfs.add(newProf);
-        _newProfNameController.clear();
-        _newProfEmailController.clear();
-        _showAddProfForm = false;
-      });
-
-      // Refresh filtered professors list
-      _filterProfs();
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur lors de la création du Coach/Professeur'),
-        ),
-      );
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Consumer<CourseProvider>(
-      builder: (context, courseProvider, child) {
-        if (courseProvider.isLoading) {
-          return Scaffold(
-            appBar: AppBar(title: Text('Modifier un Cours')),
-            body: Center(child: CircularProgressIndicator()),
-          );
-        }
-
-        return Scaffold(
-          appBar: AppBar(title: Text('Modifier un Cours')),
-          body: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Form(
-              key: _formKey,
-              child: ListView(
-                children: [
-                  TextFormField(
-                    controller: _nameController,
-                    decoration: InputDecoration(
-                      labelText: 'Nom du Cours*',
-                      border: OutlineInputBorder(),
-                    ),
-                    validator:
-                        (value) =>
-                            value?.isEmpty ?? true
-                                ? 'Ce champ est obligatoire'
-                                : null,
-                  ),
-                  SizedBox(height: 16),
-                  TextFormField(
-                    controller: _descriptionController,
-                    decoration: InputDecoration(
-                      labelText: 'Description',
-                      border: OutlineInputBorder(),
-                    ),
-                    maxLines: 3,
-                  ),
-                  SizedBox(height: 16),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text("Tranche d'âge*", style: TextStyle(fontSize: 16)),
-                      SizedBox(height: 8),
-                      RangeSlider(
-                        values: _ageRange,
-                        min: 3,
-                        max: 18,
-                        divisions: 15,
-                        labels: RangeLabels(
-                          '${_ageRange.start.round()} ans',
-                          '${_ageRange.end.round()} ans',
-                        ),
-                        onChanged: (RangeValues values) {
-                          setState(() {
-                            _ageRange = values;
-                            _ageRangeError = null;
-                          });
-                        },
-                        onChangeEnd: (values) {
-                          if (values.end - values.start < 1) {
-                            setState(() {
-                              _ageRangeError =
-                                  'La plage doit être d\'au moins 1 an';
-                            });
-                          }
-                        },
-                      ),
-                      if (_ageRangeError != null)
-                        Text(
-                          _ageRangeError!,
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.error,
-                          ),
-                        )
-                      else
-                        Text(
-                          'De ${_ageRange.start.round()} à ${_ageRange.end.round()} ans',
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                    ],
-                  ),
-                  SizedBox(height: 24),
-                  Text('Club*', style: TextStyle(fontSize: 16)),
-                  DropdownButtonFormField<UserModel>(
-                    value: _selectedClub,
-                    isExpanded: true,
-                    decoration: InputDecoration(
-                      hintText: 'Sélectionner un club',
-                      errorText:
-                          _selectedClub == null
-                              ? 'Ce champ est obligatoire'
-                              : null,
-                      border: OutlineInputBorder(),
-                    ),
-                    items:
-                        courseProvider.clubs.map((club) {
-                          return DropdownMenuItem(
-                            value: club,
-                            child: Text(club.name),
-                          );
-                        }).toList(),
-                    onChanged: (value) => setState(() => _selectedClub = value),
-                  ),
-                  SizedBox(height: 24),
-                  Text('Coach/Professeurs*', style: TextStyle(fontSize: 16)),
-                  TextFormField(
-                    controller: _profSearchController,
-                    decoration: InputDecoration(
-                      labelText: 'Rechercher un Coach/Professeur',
-                      prefixIcon: Icon(Icons.search),
-                      suffixIcon: IconButton(
-                        icon: Icon(Icons.clear),
-                        onPressed: () {
-                          _profSearchController.clear();
-                          _filterProfs();
-                        },
-                      ),
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  TextButton(
-                    onPressed:
-                        () => setState(
-                          () => _showAddProfForm = !_showAddProfForm,
-                        ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          _showAddProfForm ? Icons.remove : Icons.add,
-                          size: 20,
-                        ),
-                        SizedBox(width: 8),
-                        Text(
-                          _showAddProfForm
-                              ? 'Masquer le formulaire'
-                              : 'Ajouter un nouveau Coach/Professeur',
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (_showAddProfForm) ...[
-                    SizedBox(height: 16),
-                    TextFormField(
-                      controller: _newProfNameController,
-                      decoration: InputDecoration(
-                        labelText: 'Nom du Coach/Professeur*',
-                        border: OutlineInputBorder(),
-                      ),
-                      validator:
-                          (value) =>
-                              value?.isEmpty ?? true
-                                  ? 'Ce champ est obligatoire'
-                                  : null,
-                    ),
-                    SizedBox(height: 8),
-                    TextFormField(
-                      controller: _newProfEmailController,
-                      decoration: InputDecoration(
-                        labelText: 'Email du Coach/Professeur*',
-                        border: OutlineInputBorder(),
-                      ),
-                      keyboardType: TextInputType.emailAddress,
-                      validator:
-                          (value) =>
-                              value?.isEmpty ?? true
-                                  ? 'Ce champ est obligatoire'
-                                  : null,
-                    ),
-                    SizedBox(height: 8),
-                    ElevatedButton(
-                      onPressed: _addNewProf,
-                      child: Text('Enregistrer le Coach/Professeur'),
-                      style: ElevatedButton.styleFrom(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 10,
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: 16),
-                  ],
-                  if (_filteredProfs.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 16.0),
-                      child: Text(
-                        'Aucun Coach/Professeur trouvé',
-                        style: TextStyle(color: Colors.grey),
-                      ),
-                    )
-                  else
-                    Column(
-                      children:
-                          _filteredProfs.map((prof) {
-                            final isSelected = _selectedProfs.contains(prof);
-                            return CheckboxListTile(
-                              title: Text(prof.name),
-                              subtitle: Text(prof.email),
-                              value: isSelected,
-                              onChanged: (_) => _toggleProfSelection(prof),
-                            );
-                          }).toList(),
-                    ),
-                  if (_selectedProfs.isNotEmpty) ...[
-                    SizedBox(height: 16),
-                    Text(
-                      'Coachs/Professeurs sélectionnés:',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    Wrap(
-                      spacing: 8,
-                      children:
-                          _selectedProfs.map((prof) {
-                            return Chip(
-                              label: Text(prof.name),
-                              deleteIcon: Icon(Icons.close, size: 18),
-                              onDeleted: () => _toggleProfSelection(prof),
-                            );
-                          }).toList(),
-                    ),
-                  ],
-                  SizedBox(height: 24),
-                  ElevatedButton(
-                    onPressed: _submitForm,
-                    child: Text('Mettre à jour le Cours'),
-                    style: ElevatedButton.styleFrom(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 10,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
     );
   }
 }

@@ -39,7 +39,7 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen> {
           return Course(
             id: doc.id,
             name: data['name'],
-            club: data['club'],
+            clubId: data['clubId'],
             description: data['description'],
             schedules: schedules,
             ageRange:
@@ -78,7 +78,7 @@ class _EnrollCourseScreenState extends State<EnrollCourseScreen> {
           return ListTile(
             title: Text(course.name),
             subtitle: Text(
-              '${course.club} - ${course.description} - ${course.ageRange}',
+              '${course.clubId} - ${course.description} - ${course.ageRange}',
             ),
             onTap: () {
               enrollCourse(course);

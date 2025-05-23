@@ -51,37 +51,37 @@ class Schedule {
 class Course {
   final String id;
   final String name;
-  final UserModel club;
+  final String clubId;
   final String description;
   final List<String>? photos;
   final List<Schedule> schedules;
   final String ageRange;
   final List<String> profIds;
   final DateTime? createdAt;
-  final DateTime? congeStart;
-  final DateTime? congeEnd;
+  final DateTime? saisonStart;
+  final DateTime? saisonEnd;
   final DateTime? editedAt;
 
   Course({
     required this.id,
     required this.name,
-    required this.club,
+    required this.clubId,
     this.photos,
     required this.description,
     required this.schedules,
     required this.ageRange,
     required this.profIds,
     this.createdAt,
-    this.congeStart,
-    this.congeEnd,
+    this.saisonStart,
+    this.saisonEnd,
     this.editedAt,
   });
   Map<String, dynamic> toMap() {
     return {
       'id': id,
       'name': name,
-      'club': club.toMap(), // Ensure the club is converted to a map
-      'clubId': club.id, // Include the club ID for reference
+
+      'clubId': clubId, // Include the club ID for reference
       'description': description,
       'schedules':
           schedules.map((s) => s.toMap()).toList(), // Convert schedules to maps
@@ -90,7 +90,7 @@ class Course {
       'createdAt': createdAt,
       'photos': photos,
       'editedAt': editedAt,
-      'congeStart': congeStart, 'congeEnd': congeEnd,
+      'saisonStart': saisonStart, 'saisonEnd': saisonEnd,
     };
   }
 
@@ -98,18 +98,15 @@ class Course {
     return Course(
       id: id,
       name: data['name'] ?? 'Sans nom',
-      club: UserModel.fromMap(
-        data['club'],
-        data['clubId'],
-      ), // Convert the club map to a UserModel
+      clubId: data['clubId'] ?? '',
       description: data['description'] ?? 'Pas de description',
       schedules:
           (data['schedules'] as List<dynamic>?)
               ?.map((e) => Schedule.fromMap(e))
               .toList() ??
           [],
-      congeEnd: (data['congeEnd'] as Timestamp?)?.toDate(),
-      congeStart: (data['congeStart'] as Timestamp?)?.toDate(),
+      saisonEnd: (data['saisonEnd'] as Timestamp?)?.toDate(),
+      saisonStart: (data['saisonStart'] as Timestamp?)?.toDate(),
       photos: List<String>.from(data['photos'] ?? []),
       ageRange: data['ageRange'] ?? 'Non spécifié',
       profIds: List<String>.from(data['profIds'] ?? []),
@@ -120,7 +117,7 @@ class Course {
 
   @override
   String toString() {
-    return 'Course(id: $id, name: $name, club: $club, profIds : $profIds,ageRange: $ageRange,)';
+    return 'Course(id: $id, name: $name, club: $clubId, profIds : $profIds,ageRange: $ageRange,)';
   }
 }
 

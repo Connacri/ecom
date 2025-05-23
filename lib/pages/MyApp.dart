@@ -89,13 +89,23 @@ class _PageLanceState extends State<PageLance> {
               brightness: Brightness.light,
               primarySwatch: Colors.blue,
               chipTheme: ChipThemeData(
-                backgroundColor: Colors.grey[300]!,
+                backgroundColor: Colors.grey[800]!,
+                selectedColor:
+                    Colors.blue[700]!, // Couleur de fond lorsque sélectionné
+                checkmarkColor: Colors.white,
                 labelStyle: TextStyle(
                   fontFamily:
                       localizationModel.locale.languageCode == 'ar'
                           ? fontAr
                           : 'oswald',
                 ),
+                secondaryLabelStyle: TextStyle(
+                  color: Colors.white, // Couleur du texte lorsque sélectionné
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20.0),
+                ),
+                padding: EdgeInsets.all(8.0),
               ),
               textTheme: TextTheme(
                 bodyMedium: TextStyle(color: Colors.black),
@@ -123,12 +133,21 @@ class _PageLanceState extends State<PageLance> {
               primaryColor: Colors.blueGrey,
               chipTheme: ChipThemeData(
                 backgroundColor: Colors.grey[800]!,
+                selectedColor:
+                    Colors.blue[700]!, // Couleur de fond lorsque sélectionné
                 labelStyle: TextStyle(
                   fontFamily:
                       localizationModel.locale.languageCode == 'ar'
                           ? fontAr
                           : 'oswald',
                 ),
+                secondaryLabelStyle: TextStyle(
+                  color: Colors.white, // Couleur du texte lorsque sélectionné
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8.0),
+                ),
+                padding: EdgeInsets.all(8.0),
               ),
               textTheme: TextTheme(
                 bodyMedium: TextStyle(color: Colors.white),

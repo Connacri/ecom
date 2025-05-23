@@ -3,15 +3,17 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecom/activities/generated/profile3.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:timeago/timeago.dart' as timeago;
 
 import '../../auth/AuthProvider.dart';
 import '../../auth/google.dart';
 import '../../fonctions/DeleteUserButton.dart';
 import '../../pages/MyApp.dart';
-import '../AddCourseScreen.dart';
 import '../ParentsScreen.dart';
+import '../add/AddCourseScreen.dart';
 import '../edition/EditClubScreen.dart';
 import '../generated/multiphoto/PhotoUploadPage.dart';
 import '../generated/profile1.dart';
@@ -548,7 +550,6 @@ class _ClubHomePageState extends State<_ClubHomePage> {
                                 : AssetImage('assets/default_logo.png')
                                     as ImageProvider,
                       ),
-
                       SizedBox(height: 10),
                       Text(
                         '${user.role} : ${user.name}'.toUpperCase(),
@@ -556,13 +557,11 @@ class _ClubHomePageState extends State<_ClubHomePage> {
                           color: Colors.grey[700],
                         ),
                       ),
-
                       Text(
                         'Email: ${user.email}',
                         style: TextStyle(fontSize: 16),
                       ),
                       SizedBox(height: 10),
-
                       user.phone == null || user.phone == ''
                           ? SizedBox.shrink()
                           : Text(
@@ -597,29 +596,28 @@ class _ClubHomePageState extends State<_ClubHomePage> {
                           ),
                         ),
                       SizedBox(height: 20),
-                      ElevatedButton.icon(
-                        icon: Icon(Icons.add),
-                        label: Text('Ajouter un Cours'),
-                        onPressed: () async {
-                          await Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => AddCourseScreen(user: user),
-                            ),
-                          );
-                          _fetchCourses(); // Refresh the list of courses after adding a new one
-                        },
-                        style: ElevatedButton.styleFrom(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 10,
-                          ),
-                        ),
-                      ),
+                      // ElevatedButton.icon(
+                      //   icon: Icon(Icons.add),
+                      //   label: Text('Ajouter un Cours'),
+                      //   onPressed: () async {
+                      //     await Navigator.push(
+                      //       context,
+                      //       MaterialPageRoute(
+                      //         builder: (context) => AddCourseScreen(user: user),
+                      //       ),
+                      //     );
+                      //     _fetchCourses(); // Refresh the list of courses after adding a new one
+                      //   },
+                      //   style: ElevatedButton.styleFrom(
+                      //     padding: EdgeInsets.symmetric(
+                      //       horizontal: 20,
+                      //       vertical: 10,
+                      //     ),
+                      //   ),
+                      // ),
                     ],
                   ),
                 ),
-
                 ElevatedButton.icon(
                   onPressed:
                       () => Navigator.of(context).push(
@@ -627,6 +625,17 @@ class _ClubHomePageState extends State<_ClubHomePage> {
                       ),
                   icon: const Icon(Icons.upload_file),
                   label: const Text('Choisir & Uploader'),
+                ),
+                SizedBox(height: 20),
+                ElevatedButton.icon(
+                  onPressed:
+                      () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => AddCourseScreen2(user: user),
+                        ),
+                      ),
+                  icon: const Icon(Icons.upload_file),
+                  label: const Text('AddCourseScreen2'),
                 ),
                 SizedBox(height: 20),
                 Row(
@@ -675,6 +684,10 @@ class _ClubHomePageState extends State<_ClubHomePage> {
                       physics: NeverScrollableScrollPhysics(),
                       itemCount: _courses.length,
                       itemBuilder: (context, index) {
+                        _courses.sort(
+                          (a, b) => b.createdAt!.compareTo(a.createdAt!),
+                        );
+
                         final course = _courses[index];
                         return Card(
                           margin: EdgeInsets.symmetric(
@@ -708,7 +721,7 @@ class _ClubHomePageState extends State<_ClubHomePage> {
                                             Icons.edit,
                                             color: Colors.blue,
                                           ),
-                                          onPressed: () => _editCourse(course),
+                                          onPressed: () {},
                                         ),
                                         IconButton(
                                           icon: Icon(
@@ -763,15 +776,15 @@ class _ClubHomePageState extends State<_ClubHomePage> {
                                     height: 100,
                                     child: ListView.builder(
                                       scrollDirection: Axis.horizontal,
-                                      itemCount:
-                                          course.photos!.length > 3
-                                              ? 3
-                                              : course.photos!.length,
+                                      itemCount: course.photos!.length,
+                                      // > 3
+                                      // ? 3
+                                      // : course.photos!.length
                                       itemBuilder: (context, index) {
                                         return Padding(
                                           padding: EdgeInsets.only(right: 8.0),
-                                          child: Image.network(
-                                            course.photos![index],
+                                          child: CachedNetworkImage(
+                                            imageUrl: course.photos![index],
                                             width: 100,
                                             height: 100,
                                             fit: BoxFit.cover,
@@ -790,6 +803,45 @@ class _ClubHomePageState extends State<_ClubHomePage> {
                                   'Tranche d\'âge: ${course.ageRange}',
                                   style: TextStyle(color: Colors.grey[700]),
                                 ),
+                                SizedBox(height: 8),
+                                course.saisonStart == null ||
+                                        course.saisonStart == null
+                                    ? SizedBox.shrink()
+                                    : Text(
+                                      'Saison:',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.grey[800],
+                                      ),
+                                    ),
+                                course.saisonStart == null ||
+                                        course.saisonStart == null
+                                    ? SizedBox.shrink()
+                                    : SizedBox(height: 8),
+                                course.saisonStart == null ||
+                                        course.saisonStart == null
+                                    ? SizedBox.shrink()
+                                    : Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          'Début de Saison\n' +
+                                              DateFormat(
+                                                'yyyy-MM-dd',
+                                              ).format(course.saisonStart!),
+                                          textAlign: TextAlign.center,
+                                        ),
+
+                                        Text(
+                                          'Fin de Saison\n' +
+                                              DateFormat(
+                                                'yyyy-MM-dd',
+                                              ).format(course.saisonStart!),
+                                          textAlign: TextAlign.center,
+                                        ),
+                                      ],
+                                    ),
                                 SizedBox(height: 8),
                                 Text(
                                   'Horaires:',
@@ -811,10 +863,18 @@ class _ClubHomePageState extends State<_ClubHomePage> {
                                           size: 16,
                                           color: Colors.grey,
                                         ),
+                                        SizedBox(width: 5),
+                                        Text(
+                                          '${schedule.startTime.hour}:${schedule.startTime.minute.toString().padLeft(2, '0')} - ${schedule.endTime.hour}:${schedule.endTime.minute.toString().padLeft(2, '0')}',
+                                          style: TextStyle(
+                                            color: Colors.grey[600],
+                                          ),
+                                        ),
+
                                         SizedBox(width: 8),
                                         Expanded(
                                           child: Text(
-                                            '${schedule.days.join(", ")}: ${schedule.startTime.hour}:${schedule.startTime.minute.toString().padLeft(2, '0')} - ${schedule.endTime.hour}:${schedule.endTime.minute.toString().padLeft(2, '0')}',
+                                            '${schedule.days.join(", ")}',
                                             style: TextStyle(
                                               color: Colors.grey[600],
                                             ),
@@ -824,6 +884,7 @@ class _ClubHomePageState extends State<_ClubHomePage> {
                                     ),
                                   );
                                 }).toList(),
+
                                 SizedBox(height: 8),
                                 Text(
                                   'Professeurs:',
@@ -879,10 +940,11 @@ class _ClubHomePageState extends State<_ClubHomePage> {
                                         ),
                                         child: Row(
                                           children: [
-                                            Icon(
-                                              Icons.person,
-                                              size: 16,
-                                              color: Colors.grey,
+                                            CircleAvatar(
+                                              backgroundImage:
+                                                  CachedNetworkImageProvider(
+                                                    prof.logoUrl!,
+                                                  ),
                                             ),
                                             SizedBox(width: 8),
                                             Text(
@@ -897,6 +959,8 @@ class _ClubHomePageState extends State<_ClubHomePage> {
                                     },
                                   );
                                 }).toList(),
+
+                                Text(timeago.format(course.createdAt!)),
                               ],
                             ),
                           ),
@@ -907,17 +971,6 @@ class _ClubHomePageState extends State<_ClubHomePage> {
             ),
           ),
         );
-  }
-
-  void _editCourse(Course course) {
-    // Navigate to a screen where the course can be edited
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => EditCourseScreen(course: course)),
-    ).then((_) {
-      // Refresh the list of courses after editing
-      _fetchCourses();
-    });
   }
 
   Future<void> _deleteCourse(String courseId) async {

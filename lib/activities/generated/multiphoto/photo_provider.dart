@@ -29,85 +29,33 @@ class PhotoProvider extends ChangeNotifier {
   List<Map<String, dynamic>> get images => _images;
   bool get isLoading => _isLoading;
   bool get hasMoreData => _hasMoreData;
+  List<XFile> _pickedImages = [];
+  List<String> _uploadedImageUrls = [];
 
+  List<XFile> get pickedImages => _pickedImages;
+  List<String> get uploadedImageUrls => _uploadedImageUrls;
   // Configuration de compression
   static const int compressQuality = 80;
   static const int minWidth = 1080;
   static const int minHeight = 1080;
   static const double webpCompressionFactor = 0.8;
+  // Liste locale des XFile sélectionnés (avant upload)
+  final List<XFile> _pickedFiles = [];
 
+  // URLs obtenues après upload (vide tant que l'upload n'a pas été fait)
+  List<String> _uploadedUrls = [];
+
+  bool _isUploading = false;
+  bool get isUploading => _isUploading;
+
+  // Getters pour l'UI
+  List<XFile> get pickedFiles => List.unmodifiable(_pickedFiles);
+  List<String> get uploadedUrls => List.unmodifiable(_uploadedUrls);
   // Constructeur - Charger les images au démarrage
   PhotoProvider() {
     loadImages(refresh: true);
   }
 
-  // Méthode pour sélectionner plusieurs images et les uploader
-  // Future<void> pickAndUploadMultipleImages() async {
-  //   try {
-  //     _setLoading(true);
-  //
-  //     // 1) Ouvrir le sélecteur de la galerie
-  //     final List<XFile>? pickedFiles = await _picker.pickMultiImage(
-  //       limit: 5,
-  //     ); // Limite le nombre d'images à 10);
-  //
-  //     if (pickedFiles == null || pickedFiles.isEmpty) {
-  //       _setLoading(false);
-  //       return;
-  //     }
-  //
-  //     // 2) Pour chaque image sélectionnée, compresser puis uploader
-  //     for (var file in pickedFiles) {
-  //       // Compresser l'image en WebP
-  //       final File compressedFile = await _compressImage(File(file.path));
-  //
-  //       // Utiliser l'extension .webp pour le fichier
-  //       final String fileName =
-  //           '${DateTime.now().millisecondsSinceEpoch}_${p.basenameWithoutExtension(file.path)}.webp';
-  //
-  //       // Définir le chemin dans le storage
-  //       final firebase_storage.Reference ref = _storage
-  //           .ref()
-  //           .child('uploads')
-  //           .child(fileName);
-  //
-  //       // Uploader le fichier compressé
-  //       final firebase_storage.UploadTask uploadTask = ref.putFile(
-  //         compressedFile,
-  //       );
-  //
-  //       // Attendre la fin de l'upload
-  //       final firebase_storage.TaskSnapshot snapshot = await uploadTask
-  //           .whenComplete(() {});
-  //
-  //       // Récupérer l'URL de téléchargement
-  //       final String downloadUrl = await snapshot.ref.getDownloadURL();
-  //
-  //       // Ajouter l'URL à Firestore
-  //       String docId = await _addImageUrlToFirestore(downloadUrl);
-  //
-  //       // Ajouter immédiatement l'image à la liste locale
-  //       _images.insert(0, {
-  //         'url': downloadUrl,
-  //         'createdAt': Timestamp.now(),
-  //         'id': docId,
-  //       });
-  //
-  //       // Notifier pour mettre à jour l'UI immédiatement
-  //       notifyListeners();
-  //
-  //       // Supprimer le fichier temporaire compressé
-  //       if (await compressedFile.exists()) {
-  //         await compressedFile.delete();
-  //       }
-  //     }
-  //   } catch (e) {
-  //     debugPrint('Erreur lors de pickAndUploadMultipleImages : $e');
-  //     rethrow;
-  //   } finally {
-  //     _setLoading(false);
-  //   }
-  // }
   Future<void> pickAndUploadMultipleImages() async {
     try {
       _setLoading(true);
@@ -177,6 +125,49 @@ class PhotoProvider extends ChangeNotifier {
     } finally {
       _setLoading(false);
     }
+  }
+
+  Future<void> pickMultipleImages() async {
+    final ImagePicker picker = ImagePicker();
+    final List<XFile>? images = await picker.pickMultiImage();
+
+    if (images != null && images.isNotEmpty) {
+      _pickedImages = images;
+      notifyListeners();
+    }
+  }
+
+  Future<void> uploadPickedImages() async {
+    _uploadedImageUrls.clear();
+
+    for (var image in _pickedImages) {
+      final url = await _uploadImage(File(image.path));
+      if (url != null) {
+        _uploadedImageUrls.add(url);
+      }
+    }
+
+    notifyListeners();
+  }
+
+  Future<String?> _uploadImage(File file) async {
+    try {
+      final fileName = DateTime.now().millisecondsSinceEpoch.toString();
+      final storageRef = firebase_storage.FirebaseStorage.instance.ref().child(
+        'cours/$fileName.jpg',
+      );
+      await storageRef.putFile(file);
+      return await storageRef.getDownloadURL();
+    } catch (e) {
+      debugPrint('Erreur upload image: $e');
+      return null;
+    }
+  }
+
+  void clear() {
+    _pickedImages.clear();
+    _uploadedImageUrls.clear();
+    notifyListeners();
   }
 
   // Méthode pour prendre une photo avec la caméra et l'uploader
@@ -255,29 +246,29 @@ class PhotoProvider extends ChangeNotifier {
   }
 
   // Méthode pour compresser une image
-  Future<File> _compressImage(File file) async {
-    final Directory tempDir = await path_provider.getTemporaryDirectory();
-    final String targetPath = p.join(
-      tempDir.path,
-      '${DateTime.now().millisecondsSinceEpoch}.webp',
-    );
-
-    final result = await FlutterImageCompress.compressAndGetFile(
-      file.absolute.path,
-      targetPath,
-      quality: compressQuality,
-      minWidth: minWidth,
-      minHeight: minHeight,
-      keepExif: false,
-      format: CompressFormat.webp,
-    );
-
-    if (result == null) {
-      return file;
-    }
-
-    return File(result.path);
-  }
+  // Future<File> _compressImage(File file) async {
+  //   final Directory tempDir = await path_provider.getTemporaryDirectory();
+  //   final String targetPath = p.join(
+  //     tempDir.path,
+  //     '${DateTime.now().millisecondsSinceEpoch}.webp',
+  //   );
+  //
+  //   final result = await FlutterImageCompress.compressAndGetFile(
+  //     file.absolute.path,
+  //     targetPath,
+  //     quality: compressQuality,
+  //     minWidth: minWidth,
+  //     minHeight: minHeight,
+  //     keepExif: false,
+  //     format: CompressFormat.webp,
+  //   );
+  //
+  //   if (result == null) {
+  //     return file;
+  //   }
+  //
+  //   return File(result.path);
+  // }
 
   // Charger les images depuis Firestore avec pagination
   Future<void> loadImages({bool refresh = false}) async {
@@ -424,5 +415,135 @@ class PhotoProvider extends ChangeNotifier {
     } finally {
       _setLoading(false);
     }
+  }
+
+  //////////////////////////////////////////////////////////
+  /// Vide la liste de fichiers sélectionnés (si besoin de "reset").
+  void clearPicked() {
+    _pickedFiles.clear();
+    _uploadedUrls.clear();
+    notifyListeners();
+  }
+
+  /// Méthode pour sélectionner plusieurs images (stockées localement, sans upload)
+  Future<void> pickImages({int limit = 10}) async {
+    try {
+      final List<XFile>? picked = await _picker.pickMultiImage(
+        // on peut également proposer un paramètre « limit »
+      );
+      if (picked == null || picked.isEmpty) return;
+
+      // Contrainte manuelle de nombre max
+      final List<XFile> limited =
+          picked.length > limit ? picked.sublist(0, limit) : picked;
+
+      // On ajoute à la liste interne (sans upload)
+      _pickedFiles.clear();
+      _pickedFiles.addAll(limited);
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Erreur pickImages : $e');
+      rethrow;
+    }
+  }
+
+  /// Méthode pour prendre une photo (stocker localement, sans upload)
+  Future<void> takePhoto() async {
+    try {
+      final XFile? photo = await _picker.pickImage(source: ImageSource.camera);
+      if (photo == null) return;
+
+      _pickedFiles.clear();
+      _pickedFiles.add(photo);
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Erreur takePhoto : $e');
+      rethrow;
+    }
+  }
+
+  /// Compresse un fichier en format WebP et renvoie le File compressé
+  Future<File> _compressImage(File file) async {
+    final Directory tempDir = await path_provider.getTemporaryDirectory();
+    final String targetPath = p.join(
+      tempDir.path,
+      '${DateTime.now().millisecondsSinceEpoch}.webp',
+    );
+
+    final result = await FlutterImageCompress.compressAndGetFile(
+      file.absolute.path,
+      targetPath,
+      quality: compressQuality,
+      minWidth: minWidth,
+      minHeight: minHeight,
+      keepExif: false,
+      format: CompressFormat.webp,
+    );
+
+    if (result == null) {
+      // Si compression échoue, on retourne le fichier d’origine
+      return file;
+    }
+    return File(result.path);
+  }
+
+  /// Méthode appelée dans _submitForm() pour uploader toutes les images sélectionnées
+  /// - compress
+  /// - upload sur Firebase Storage
+  /// - enregistrer URL dans Firestore (collection 'storage')
+  /// - stocker la liste des URL dans _uploadedUrls
+  Future<List<String>> uploadSelectedImages() async {
+    if (_pickedFiles.isEmpty) return [];
+
+    _setUploading(true);
+
+    try {
+      final List<String> urls = [];
+
+      for (var xfile in _pickedFiles) {
+        final File original = File(xfile.path);
+        final File compressedFile = await _compressImage(original);
+
+        final String fileName =
+            '${DateTime.now().millisecondsSinceEpoch}_${p.basenameWithoutExtension(xfile.path)}.webp';
+        final firebase_storage.Reference ref = _storage
+            .ref()
+            .child('uploads')
+            .child(fileName);
+
+        final firebase_storage.UploadTask uploadTask = ref.putFile(
+          compressedFile,
+        );
+        final firebase_storage.TaskSnapshot snapshot = await uploadTask
+            .whenComplete(() {});
+
+        final String downloadUrl = await snapshot.ref.getDownloadURL();
+        // Ajouter l’URL à Firestore
+        await _firestore.collection('storage').add({
+          'url': downloadUrl,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+
+        urls.add(downloadUrl);
+
+        // Supprimer le fichier temporaire compressé
+        if (await compressedFile.exists()) {
+          await compressedFile.delete();
+        }
+      }
+
+      _uploadedUrls = urls;
+      return urls;
+    } catch (e) {
+      debugPrint('Erreur uploadSelectedImages : $e');
+      rethrow;
+    } finally {
+      _setUploading(false);
+    }
+  }
+
+  void _setUploading(bool val) {
+    _isUploading = val;
+    notifyListeners();
   }
 }

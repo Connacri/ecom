@@ -68,7 +68,7 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => ChildProvider()),
         //ChangeNotifierProvider(create: (_) => ClubProvider()),
         ChangeNotifierProvider(create: (_) => UserProvider()),
-        ChangeNotifierProvider(create: (_) => CourseProvider()),
+        ChangeNotifierProvider(create: (_) => CourseProvider2()),
         ChangeNotifierProvider(create: (_) => ProfProvider()),
         ChangeNotifierProvider<PhotoProvider>(create: (_) => PhotoProvider()),
 
