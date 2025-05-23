@@ -714,6 +714,10 @@ class _ClubHomePageState extends State<_ClubHomePage> {
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
+                                    SizedBox(width: 10),
+                                    Icon(Icons.people),
+                                    SizedBox(width: 5),
+                                    Text(course.placeNumber.toString()),
                                     Row(
                                       children: [
                                         IconButton(
