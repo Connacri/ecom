@@ -61,6 +61,7 @@ class Course {
   final DateTime? saisonStart;
   final DateTime? saisonEnd;
   final DateTime? editedAt;
+  final int? placeNumber;
 
   Course({
     required this.id,
@@ -75,12 +76,13 @@ class Course {
     this.saisonStart,
     this.saisonEnd,
     this.editedAt,
+    this.placeNumber,
   });
   Map<String, dynamic> toMap() {
     return {
       'id': id,
       'name': name,
-
+      'placeNumber': placeNumber,
       'clubId': clubId, // Include the club ID for reference
       'description': description,
       'schedules':
@@ -105,6 +107,7 @@ class Course {
               ?.map((e) => Schedule.fromMap(e))
               .toList() ??
           [],
+      placeNumber: data['placeNumber'] ?? 0,
       saisonEnd: (data['saisonEnd'] as Timestamp?)?.toDate(),
       saisonStart: (data['saisonStart'] as Timestamp?)?.toDate(),
       photos: List<String>.from(data['photos'] ?? []),

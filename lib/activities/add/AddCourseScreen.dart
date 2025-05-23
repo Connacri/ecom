@@ -30,6 +30,7 @@ class _AddCourseScreen2State extends State<AddCourseScreen2> {
   final _formKey = GlobalKey<FormState>();
   final _courseNameController = TextEditingController();
   final _descriptionController = TextEditingController();
+  final _placeNumberController = TextEditingController();
   RangeValues _ageRange = const RangeValues(5, 18);
   String? _ageRangeError;
   List<String> _photos = [];
@@ -275,6 +276,17 @@ class _AddCourseScreen2State extends State<AddCourseScreen2> {
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Veuillez entrer une description';
+                      }
+                      return null;
+                    },
+                  ),
+                  TextFormField(
+                    controller: _placeNumberController,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(labelText: 'Nombre de Place'),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Veuillez entrer le Nombre de Place';
                       }
                       return null;
                     },
@@ -645,6 +657,7 @@ class _AddCourseScreen2State extends State<AddCourseScreen2> {
                 children: [
                   Text('Nom du cours: ${_courseNameController.text}'),
                   Text('Description: ${_descriptionController.text}'),
+                  Text('Nombre de Place: ${_placeNumberController.text}'),
                   Text(
                     'Tranche d\'âge: ${_ageRange.start.round()} - ${_ageRange.end.round()} ans',
                   ),
@@ -1011,6 +1024,7 @@ class _AddCourseScreen2State extends State<AddCourseScreen2> {
         ageRange: '${_ageRange.start.round()}-${_ageRange.end.round()}',
         profIds: _selectedProfs.map((user) => user.id).toList(),
         photos: photoUrls,
+        placeNumber: int.parse(_placeNumberController.text),
         createdAt: DateTime.now(),
         saisonStart: DateFormat('dd/MM/yyyy').parseStrict(debutController.text),
         saisonEnd: DateFormat('dd/MM/yyyy').parseStrict(finController.text),
@@ -1020,7 +1034,7 @@ class _AddCourseScreen2State extends State<AddCourseScreen2> {
       await docRef.set(course.toMap());
 
       await FirebaseFirestore.instance
-          .collection('userModels')
+          .collection('userModel')
           .doc(widget.user.id)
           .set({
             'courses': FieldValue.arrayUnion([course.id]),
