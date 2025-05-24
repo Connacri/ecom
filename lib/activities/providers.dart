@@ -299,7 +299,7 @@ class UserProvider with ChangeNotifier {
   }
 }
 
-class CourseProvider2 with ChangeNotifier {
+class CourseProvider with ChangeNotifier {
   List<Course> _courses = [];
   List<Schedule> _schedules = [];
   List<UserModel> _professors = [];
@@ -335,13 +335,13 @@ class CourseProvider2 with ChangeNotifier {
     notifyListeners();
   }
 
-  void addProfessor(UserModel professor) {
-    _professors.add(professor);
+  void removeSchedule(Schedule schedule) {
+    _schedules.remove(schedule);
     notifyListeners();
   }
 
-  void removeSchedule(Schedule schedule) {
-    _schedules.remove(schedule);
+  void addProfessor(UserModel professor) {
+    _professors.add(professor);
     notifyListeners();
   }
 
@@ -384,5 +384,30 @@ class ProfProvider with ChangeNotifier {
     } catch (e) {
       debugPrint('Erreur lors du fetch des professeurs : $e');
     }
+  }
+}
+
+class StepProvider with ChangeNotifier {
+  int _currentStep = 0;
+
+  int get currentStep => _currentStep;
+
+  void nextStep() {
+    if (_currentStep < 5) {
+      _currentStep++;
+      notifyListeners();
+    }
+  }
+
+  void previousStep() {
+    if (_currentStep > 0) {
+      _currentStep--;
+      notifyListeners();
+    }
+  }
+
+  void reset() {
+    _currentStep = 0;
+    notifyListeners();
   }
 }

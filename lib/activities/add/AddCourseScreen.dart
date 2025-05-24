@@ -34,10 +34,10 @@ class _AddCourseScreen2State extends State<AddCourseScreen2> {
   RangeValues _ageRange = const RangeValues(5, 18);
   String? _ageRangeError;
   List<String> _photos = [];
-  // List<String> _profIds = [];
-  List<String> _coachIds = [];
-  List<Schedule> _schedules = [];
-  UserModel? _selectedClub;
+  // // List<String> _profIds = [];
+  // List<String> _coachIds = [];
+  // List<Schedule> _schedules = [];
+  // UserModel? _selectedClub;
   final _profSearchController = TextEditingController();
   final _newProfNameController = TextEditingController();
   final _newProfEmailController = TextEditingController();
@@ -200,7 +200,7 @@ class _AddCourseScreen2State extends State<AddCourseScreen2> {
     super.didChangeDependencies();
     // Schedule the call to clearcorses after the build phase is complete
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<CourseProvider2>(context, listen: false).clearcorses();
+      Provider.of<CourseProvider>(context, listen: false).clearcorses();
     });
   }
 
@@ -559,7 +559,7 @@ class _AddCourseScreen2State extends State<AddCourseScreen2> {
                     ),
                   ),
                   SizedBox(height: 20),
-                  Consumer<CourseProvider2>(
+                  Consumer<CourseProvider>(
                     builder: (context, provider, child) {
                       if (provider.schedules.isNotEmpty) {
                         return Column(
@@ -729,7 +729,7 @@ class _AddCourseScreen2State extends State<AddCourseScreen2> {
                     'Horaires:',
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
-                  Consumer<CourseProvider2>(
+                  Consumer<CourseProvider>(
                     builder: (context, provider, child) {
                       if (provider.schedules.isNotEmpty) {
                         return Column(
@@ -949,7 +949,7 @@ class _AddCourseScreen2State extends State<AddCourseScreen2> {
                           createdAt: DateTime.now(),
                         );
 
-                        Provider.of<CourseProvider2>(
+                        Provider.of<CourseProvider>(
                           context,
                           listen: false,
                         ).addSchedule(newSchedule);
@@ -965,7 +965,7 @@ class _AddCourseScreen2State extends State<AddCourseScreen2> {
   }
 
   Future<void> _saveCourse() async {
-    final courseProvider = Provider.of<CourseProvider2>(context, listen: false);
+    final courseProvider = Provider.of<CourseProvider>(context, listen: false);
     // Afficher un indicateur de progression
     showDialog(
       context: context,
@@ -1504,127 +1504,3 @@ class SaisonForm extends StatelessWidget {
     );
   }
 }
-
-// class ImageStep extends StatefulWidget {
-//   @override
-//   _ImageStepState createState() => _ImageStepState();
-// }
-//
-// class _ImageStepState extends State<ImageStep> {
-//   List<String> _photos = [];
-//   bool _expanded = false;
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     return Column(
-//       children: [
-//         Wrap(
-//           spacing: 8.0, // Espace horizontal entre les images
-//           runSpacing: 8.0, // Espace vertical entre les lignes
-//           children: _buildPhotoWidgets(),
-//         ),
-//         ElevatedButton(onPressed: _pickImage, child: Text('Ajouter une photo')),
-//       ],
-//     );
-//   }
-//
-//   List<Widget> _buildPhotoWidgets() {
-//     List<Widget> photoWidgets = [];
-//
-//     int displayCount =
-//         _expanded ? _photos.length : (_photos.length > 4 ? 4 : _photos.length);
-//
-//     for (int index = 0; index < displayCount; index++) {
-//       if (index == 3 && !_expanded && _photos.length > 4) {
-//         photoWidgets.add(
-//           GestureDetector(
-//             onTap: () {
-//               setState(() {
-//                 _expanded = true;
-//               });
-//             },
-//             child: Stack(
-//               children: [
-//                 SizedBox(
-//                   width: (MediaQuery.of(context).size.width - 40) / 4,
-//                   height: 100,
-//                   child: Image.file(File(_photos[index]), fit: BoxFit.cover),
-//                 ),
-//                 Center(
-//                   child: Column(
-//                     mainAxisAlignment: MainAxisAlignment.center,
-//                     children: [
-//                       Icon(Icons.add, size: 30, color: Colors.white),
-//                       Text(
-//                         '+${_photos.length - 4}',
-//                         style: TextStyle(color: Colors.white, fontSize: 16),
-//                       ),
-//                     ],
-//                   ),
-//                 ),
-//               ],
-//             ),
-//           ),
-//         );
-//       } else if (index == _photos.length - 1 && _expanded) {
-//         photoWidgets.add(
-//           GestureDetector(
-//             onTap: () {
-//               setState(() {
-//                 _expanded = false;
-//               });
-//             },
-//             child: Stack(
-//               children: [
-//                 SizedBox(
-//                   width: (MediaQuery.of(context).size.width - 40) / 4,
-//                   height: 100,
-//                   child: Image.file(File(_photos[index]), fit: BoxFit.cover),
-//                 ),
-//                 Center(
-//                   child: Icon(Icons.remove, size: 30, color: Colors.white),
-//                 ),
-//               ],
-//             ),
-//           ),
-//         );
-//       } else {
-//         photoWidgets.add(
-//           Stack(
-//             children: [
-//               SizedBox(
-//                 width: (MediaQuery.of(context).size.width - 40) / 4,
-//                 height: 100,
-//                 child: Image.file(File(_photos[index]), fit: BoxFit.cover),
-//               ),
-//               Positioned(
-//                 right: 0,
-//                 child: IconButton(
-//                   icon: Icon(Icons.delete, color: Colors.red),
-//                   onPressed: () {
-//                     setState(() {
-//                       _photos.removeAt(index);
-//                     });
-//                   },
-//                 ),
-//               ),
-//             ],
-//           ),
-//         );
-//       }
-//     }
-//
-//     return photoWidgets;
-//   }
-//
-//   Future<void> _pickImage() async {
-//     final picker = ImagePicker();
-//     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-//
-//     if (pickedFile != null) {
-//       setState(() {
-//         _photos.add(pickedFile.path);
-//       });
-//     }
-//   }
-// }

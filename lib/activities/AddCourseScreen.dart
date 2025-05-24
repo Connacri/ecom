@@ -55,7 +55,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     super.didChangeDependencies();
     // Schedule the call to clearcorses after the build phase is complete
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<CourseProvider2>(context, listen: false).clearcorses();
+      Provider.of<CourseProvider>(context, listen: false).clearcorses();
     });
   }
 
@@ -474,7 +474,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                           createdAt: DateTime.now(),
                         );
 
-                        Provider.of<CourseProvider2>(
+                        Provider.of<CourseProvider>(
                           context,
                           listen: false,
                         ).addSchedule(newSchedule);
@@ -1023,7 +1023,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                   padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                 ),
               ),
-              Consumer<CourseProvider2>(
+              Consumer<CourseProvider>(
                 builder: (context, provider, child) {
                   if (provider.schedules.isNotEmpty) {
                     return Column(

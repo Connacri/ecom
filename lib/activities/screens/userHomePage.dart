@@ -14,6 +14,7 @@ import '../../fonctions/DeleteUserButton.dart';
 import '../../pages/MyApp.dart';
 import '../ParentsScreen.dart';
 import '../add/AddCourseScreen.dart';
+import '../add/addCourseProgress.dart';
 import '../edition/EditClubScreen.dart';
 import '../generated/multiphoto/PhotoUploadPage.dart';
 import '../generated/profile1.dart';
@@ -618,6 +619,17 @@ class _ClubHomePageState extends State<_ClubHomePage> {
                     ],
                   ),
                 ),
+
+                ElevatedButton.icon(
+                  onPressed:
+                      () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => CheckoutScreen(user: user),
+                        ),
+                      ),
+                  icon: const Icon(Icons.upload_file),
+                  label: const Text('CheckoutScreen'),
+                ),  SizedBox(height: 20),
                 ElevatedButton.icon(
                   onPressed:
                       () => Navigator.of(context).push(
@@ -626,17 +638,17 @@ class _ClubHomePageState extends State<_ClubHomePage> {
                   icon: const Icon(Icons.upload_file),
                   label: const Text('Choisir & Uploader'),
                 ),
-                SizedBox(height: 20),
-                ElevatedButton.icon(
-                  onPressed:
-                      () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => AddCourseScreen2(user: user),
-                        ),
-                      ),
-                  icon: const Icon(Icons.upload_file),
-                  label: const Text('AddCourseScreen2'),
-                ),
+                // SizedBox(height: 20),
+                // ElevatedButton.icon(
+                //   onPressed:
+                //       () => Navigator.of(context).push(
+                //         MaterialPageRoute(
+                //           builder: (_) => AddCourseScreen2(user: user),
+                //         ),
+                //       ),
+                //   icon: const Icon(Icons.upload_file),
+                //   label: const Text('AddCourseScreen2'),
+                // ),
                 SizedBox(height: 20),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,

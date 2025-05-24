@@ -10,6 +10,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
+import 'activities/add/addCourseProgress.dart';
 import 'activities/generated/multiphoto/photo_provider.dart';
 import 'activities/providers.dart';
 import 'ads_provider.dart';
@@ -68,9 +69,10 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => ChildProvider()),
         //ChangeNotifierProvider(create: (_) => ClubProvider()),
         ChangeNotifierProvider(create: (_) => UserProvider()),
-        ChangeNotifierProvider(create: (_) => CourseProvider2()),
+        ChangeNotifierProvider(create: (_) => CourseProvider()),
         ChangeNotifierProvider(create: (_) => ProfProvider()),
         ChangeNotifierProvider<PhotoProvider>(create: (_) => PhotoProvider()),
+        ChangeNotifierProvider(create: (_) => StepProvider()),
 
         // ChangeNotifierProvider(create: (_) => AuthService()),
         // ChangeNotifierProxyProvider<AuthService, ProfileProvider>(
