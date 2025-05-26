@@ -3,17 +3,20 @@ import 'dart:io';
 import 'dart:typed_data' show Uint8List;
 
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
 import 'package:ecom/pages/MyApp.dart';
 import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
 import 'package:flutter/material.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:flutter_osm_plugin/flutter_osm_plugin.dart' as osm;
+import 'package:geocoding/geocoding.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 
+import '../aGeo/map/LocationAppExample.dart';
 import '../modèles.dart';
 import '../providers.dart';
 
@@ -59,10 +62,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     'instructeur',
     'moniteur',
   ];
+  int currentStep = 0;
 
   @override
   void initState() {
     super.initState();
+    _resetState();
     _loadProfsList();
     _profSearchController.addListener(filterProfs);
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -71,6 +76,40 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         listen: false,
       ).fetchProfessorsFromFirestore();
     });
+  }
+
+  void _resetState() {
+    _currentStep = 0;
+    _courseNameController.clear();
+    _descriptionController.clear();
+    _placeNumberController.clear();
+    _ageRange = const RangeValues(5, 18);
+    _ageRangeError = null;
+    _photos = [];
+    _coachIds = [];
+    _schedules = [];
+    _selectedClub = null;
+    _profSearchController.clear();
+    _newProfNameController.clear();
+    _newProfEmailController.clear();
+    _availableProfs = [];
+    _filteredProfs = [];
+    _selectedProfs = [];
+    _isLoading = true;
+    _showAddProfForm = false;
+    _showAllPhotos = false;
+  }
+
+  @override
+  void dispose() {
+    _courseNameController.dispose();
+    _descriptionController.dispose();
+    _placeNumberController.dispose();
+    _profSearchController.dispose();
+    _newProfNameController.dispose();
+    _newProfEmailController.dispose();
+    notifier.dispose();
+    super.dispose();
   }
 
   Future<void> _loadProfsList() async {
@@ -101,7 +140,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       // Récupérer les professeurs
       List<UserModel> profs = [];
       for (String role in professeurRoles) {
-        final profsQuery = FirebaseFirestore.instance
+        final profsQuery = firestore.FirebaseFirestore.instance
             .collection('userModel')
             .where('role', isEqualTo: role);
 
@@ -162,7 +201,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         photos: [],
       );
 
-      await FirebaseFirestore.instance
+      await firestore.FirebaseFirestore.instance
           .collection('userModel')
           .doc(profId)
           .set(newProf.toMap());
@@ -208,6 +247,17 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   final debutController = TextEditingController();
   final finController = TextEditingController();
   final saisonFormKey = GlobalKey<FormState>();
+  ValueNotifier<osm.GeoPoint?> notifier = ValueNotifier(null);
+  Future<String> getAddressFromLatLng(double lat, double lng) async {
+    final List<Placemark> placemarks = await placemarkFromCoordinates(lat, lng);
+
+    if (placemarks.isNotEmpty) {
+      final Placemark place = placemarks.first;
+      return "${place.locality}, ${place.country}"; //${place.street}, ${place.postalCode},
+    }
+
+    return "";
+  }
 
   DateTime? get dateDebut {
     try {
@@ -233,6 +283,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       'Professeurs / Coachs',
       'Les Jours & Horaires',
       'Saison',
+      // 'Localisation', // Nouvelle étape
       'Aperçu',
     ];
     final stepProvider = Provider.of<StepProvider>(context);
@@ -275,12 +326,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                             ),
                           ),
                           textCapitalization: TextCapitalization.words,
-                          // validator: (value) {
-                          //   if (value == null || value.isEmpty) {
-                          //     return 'Veuillez entrer un nom de cours';
-                          //   }
-                          //   return null;
-                          // },
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Veuillez entrer un nom de cours';
+                            }
+                            return null;
+                          },
                         ),
                         SizedBox(height: 20),
                         TextFormField(
@@ -302,12 +353,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
-                          // validator: (value) {
-                          //   if (value == null || value.isEmpty) {
-                          //     return 'Veuillez entrer une description';
-                          //   }
-                          //   return null;
-                          // },
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Veuillez entrer une description';
+                            }
+                            return null;
+                          },
                         ),
                         SizedBox(height: 20),
                         Row(
@@ -343,12 +394,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                 ),
-                                // validator: (value) {
-                                //   if (value == null || value.isEmpty) {
-                                //     return 'Veuillez entrer le Nombre de Place';
-                                //   }
-                                //   return null;
-                                // },
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Veuillez entrer le Nombre de Place';
+                                  }
+                                  return null;
+                                },
                               ),
                             ),
                           ],
@@ -428,6 +479,85 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           ),
                         ),
                         SizedBox(height: 24),
+                        Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Text('Lieu'),
+                              notifier.value == null
+                                  ? Container()
+                                  : Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: ValueListenableBuilder<
+                                      osm.GeoPoint?
+                                    >(
+                                      valueListenable: notifier,
+                                      builder: (ctx, px, child) {
+                                        return FutureBuilder<String>(
+                                          future: getAddressFromLatLng(
+                                            px!.latitude,
+                                            px.longitude,
+                                          ),
+                                          builder: (
+                                            BuildContext context,
+                                            AsyncSnapshot<String> snapshot,
+                                          ) {
+                                            if (snapshot.hasData) {
+                                              return Text(snapshot.data!);
+                                            } else if (snapshot.hasError) {
+                                              return Text(
+                                                'Erreur: ${snapshot.error}',
+                                              );
+                                            } else {
+                                              return CircularProgressIndicator();
+                                            }
+                                          },
+                                        );
+
+                                        //   Center(
+                                        //   child: Text(
+                                        //     "${px?.latitude.toString()} - ${px?.longitude.toString()}" ??
+                                        //         '',
+                                        //     textAlign: TextAlign.center,
+                                        //   ),
+                                        // );
+                                      },
+                                    ),
+                                  ),
+                              // ValueListenableBuilder<GeoPoint?>(
+                              //   valueListenable: notifier,
+                              //   builder: (ctx, p, child) {
+                              //     return Center(
+                              //       child: Text(
+                              //         "${p?.toString() ?? ""}",
+                              //         textAlign: TextAlign.center,
+                              //       ),
+                              //     );
+                              //   },
+                              // ),
+                              IconButton(
+                                onPressed: () async {
+                                  final osm.GeoPoint? p = await Navigator.of(
+                                    context,
+                                  ).push(
+                                    MaterialPageRoute(
+                                      builder:
+                                          (ctx) =>
+                                              SearchPage(), // retourne GeoPoint de Firestore
+                                    ),
+                                  );
+                                  if (p != null) {
+                                    setState(() => notifier.value = p);
+                                  }
+                                },
+                                icon: Icon(Icons.location_searching),
+                              ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(height: 20),
                       ],
                     ),
                     // Contenu de l'étape 1 : Photos des Cours
@@ -439,6 +569,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         });
                       },
                     ),
+
                     // Contenu de l'étape 2 : Professeurs / Coachs
                     ListView(
                       children: [
@@ -711,6 +842,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         ),
                       ],
                     ),
+                    // Ajoutez le widget LocationStep pour la nouvelle étape
+
                     // Contenu de l'étape 5 : Aperçu
                     ListView(
                       //crossAxisAlignment: CrossAxisAlignment.start,
@@ -849,6 +982,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           ),
                         ),
 
+                        // Dans l'étape Aperçu
+                        // Ajoutez l'affichage de la localisation dans l'aperçu
+                        SizedBox(height: 20),
                         // Affichage des horaires
                         SizedBox(height: 20),
                         Text(
@@ -1328,107 +1464,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
   }
 
-  // Future<void> _saveCourse() async {
-  //   final courseProvider = Provider.of<CourseProvider>(context, listen: false);
-  //   // Afficher un indicateur de progression
-  //   showDialog(
-  //     context: context,
-  //     barrierDismissible: false,
-  //     builder: (BuildContext context) {
-  //       return Center(child: CircularProgressIndicator(color: Colors.white70));
-  //     },
-  //   );
-  //
-  //   try {
-  //     List<String> photoUrls = [];
-  //
-  //     // Téléchargez les images sur Firebase Storage et obtenez les URLs
-  //     for (var photo in _photos) {
-  //       if (!photo.startsWith('http')) {
-  //         // Compresser l'image en WebP avant l'upload
-  //         final compressedImageBytes = await _compressImageToWebP(photo);
-  //
-  //         if (compressedImageBytes != null) {
-  //           // Créer une référence avec extension .webp
-  //           final ref = firebase_storage.FirebaseStorage.instance.ref().child(
-  //             'course_photos/${DateTime.now().millisecondsSinceEpoch}.webp',
-  //           );
-  //
-  //           // Upload des bytes compressés
-  //           await ref.putData(
-  //             compressedImageBytes,
-  //             firebase_storage.SettableMetadata(contentType: 'image/webp'),
-  //           );
-  //
-  //           final url = await ref.getDownloadURL();
-  //           photoUrls.add(url);
-  //         } else {
-  //           // Si la compression échoue, utiliser l'image originale
-  //           final file = File(photo);
-  //           final ref = firebase_storage.FirebaseStorage.instance.ref().child(
-  //             'course_photos/${DateTime.now().millisecondsSinceEpoch}',
-  //           );
-  //           await ref.putFile(file);
-  //           final url = await ref.getDownloadURL();
-  //           photoUrls.add(url);
-  //         }
-  //       } else {
-  //         photoUrls.add(photo);
-  //       }
-  //     }
-  //
-  //     final docRef = FirebaseFirestore.instance.collection('courses').doc();
-  //
-  //     final course = Course(
-  //       id: docRef.id,
-  //       name: _courseNameController.text,
-  //       clubId: widget.user.id,
-  //       description: _descriptionController.text,
-  //       schedules: courseProvider.schedules,
-  //       ageRange: '${_ageRange.start.round()}-${_ageRange.end.round()}',
-  //       profIds: _selectedProfs.map((user) => user.id).toList(),
-  //       photos: photoUrls,
-  //       placeNumber: int.parse(_placeNumberController.text),
-  //       createdAt: DateTime.now(),
-  //       saisonStart: DateFormat('dd/MM/yyyy').parseStrict(debutController.text),
-  //       saisonEnd: DateFormat('dd/MM/yyyy').parseStrict(finController.text),
-  //     );
-  //
-  //     // Sauvegarder le cours
-  //     await docRef.set(course.toMap());
-  //
-  //     await FirebaseFirestore.instance
-  //         .collection('userModel')
-  //         .doc(widget.user.id)
-  //         .set({
-  //           'courses': FieldValue.arrayUnion([course.id]),
-  //         }, SetOptions(merge: true));
-  //
-  //     // Fermer l'indicateur de progression
-  //     Navigator.of(context).pop();
-  //
-  //     // Afficher un message de succès
-  //     ScaffoldMessenger.of(
-  //       context,
-  //     ).showSnackBar(SnackBar(content: Text('Cours sauvegardé avec succès!')));
-  //
-  //     // Naviguer vers l'écran d'accueil
-  //     Navigator.pushReplacement(
-  //       context,
-  //       MaterialPageRoute(builder: (context) => MyApp1()),
-  //     );
-  //   } catch (e) {
-  //     // Fermer l'indicateur de progression en cas d'erreur
-  //     Navigator.of(context).pop();
-  //
-  //     // Afficher un message d'erreur
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       SnackBar(
-  //         content: Text('Erreur lors de la sauvegarde: ${e.toString()}'),
-  //       ),
-  //     );
-  //   }
-  // }
   Future<void> _saveCourse() async {
     final courseProvider = Provider.of<CourseProvider>(context, listen: false);
     List<String> photoUrls = [];
@@ -1458,6 +1493,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
               final url = await ref.getDownloadURL();
               current.value++;
+
               return url;
             } else {
               current.value++;
@@ -1467,7 +1503,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
       photoUrls = await Future.wait(futures);
 
-      final docRef = FirebaseFirestore.instance.collection('courses').doc();
+      final docRef =
+          firestore.FirebaseFirestore.instance.collection('courses').doc();
 
       final course = Course(
         id: docRef.id,
@@ -1478,20 +1515,24 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         ageRange: '${_ageRange.start.round()}-${_ageRange.end.round()}',
         profIds: _selectedProfs.map((user) => user.id).toList(),
         photos: photoUrls,
-        placeNumber: int.parse(_placeNumberController.text),
+        placeNumber: int.parse(_placeNumberController.text.trim()),
         createdAt: DateTime.now(),
         saisonStart: DateFormat('dd/MM/yyyy').parseStrict(debutController.text),
         saisonEnd: DateFormat('dd/MM/yyyy').parseStrict(finController.text),
+        location: firestore.GeoPoint(
+          notifier.value!.latitude,
+          notifier.value!.longitude,
+        ),
       );
+      print(course);
+      await docRef.set(course.toMap(), firestore.SetOptions(merge: true));
 
-      await docRef.set(course.toMap());
-
-      await FirebaseFirestore.instance
+      await firestore.FirebaseFirestore.instance
           .collection('userModel')
           .doc(widget.user.id)
           .set({
-            'courses': FieldValue.arrayUnion([course.id]),
-          }, SetOptions(merge: true));
+            'courses': firestore.FieldValue.arrayUnion([course.id]),
+          }, firestore.SetOptions(merge: true));
 
       Navigator.of(context).pop(); // Ferme le progress dialog
 
@@ -1507,6 +1548,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Erreur: ${e.toString()}')));
+      print('*****************************************');
+      print(e);
     }
   }
 
@@ -1560,25 +1603,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
   }
 
-  // Méthode pour compresser l'image en WebP
-  // Future<Uint8List?> _compressImageToWebP(String imagePath) async {
-  //   try {
-  //     final compressedBytes = await FlutterImageCompress.compressWithFile(
-  //       imagePath,
-  //       format: CompressFormat.heic,
-  //       quality: 85, // Qualité élevée (0-100, 85 est un bon compromis)
-  //       minWidth: 800, // Largeur minimale
-  //       minHeight: 600, // Hauteur minimale
-  //       keepExif:
-  //           false, // Supprimer les métadonnées EXIF pour réduire la taille
-  //     );
-  //
-  //     return compressedBytes;
-  //   } catch (e) {
-  //     print('Erreur lors de la compression: $e');
-  //     return null;
-  //   }
-  // }
   Future<Uint8List?> _compressImageToWebP(String imagePath) async {
     try {
       return await FlutterImageCompress.compressWithFile(
@@ -1608,6 +1632,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         return _validateStep3();
       case 4:
         return _validateStep4();
+
       default:
         return false;
     }
@@ -1628,9 +1653,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   bool _validateStep3() {
     // Assuming at least one schedule is required
-    print(
-      ' _schedules _schedules _schedules _schedules _schedules _schedules _schedules _schedules',
-    );
+
     print(_schedules);
 
     return Provider.of<CourseProvider>(
@@ -1654,7 +1677,7 @@ class StepProgressHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final stepProvider = Provider.of<StepProvider>(context);
     final current = stepProvider.currentStep;
-    final progress = current / steps.length;
+    final progress = current / (steps.length - 1);
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -1678,7 +1701,7 @@ class StepProgressHeader extends StatelessWidget {
                   ),
             ),
             Text(
-              '$current of ${steps.length}',
+              '${current + 1} of ${steps.length}',
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
             ),
           ],

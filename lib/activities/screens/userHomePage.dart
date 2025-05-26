@@ -3,6 +3,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecom/activities/generated/profile3.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_osm_plugin/flutter_osm_plugin.dart' as osm;
+import 'package:geocoding/geocoding.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
@@ -13,7 +15,7 @@ import '../../auth/google.dart';
 import '../../fonctions/DeleteUserButton.dart';
 import '../../pages/MyApp.dart';
 import '../ParentsScreen.dart';
-import '../add/AddCourseScreen.dart';
+import '../aGeo/map/LocationAppExample.dart';
 import '../add/addCourseProgress.dart';
 import '../edition/EditClubScreen.dart';
 import '../generated/multiphoto/PhotoUploadPage.dart';
@@ -401,6 +403,7 @@ class _ClubHomePageState extends State<_ClubHomePage> {
   bool isSigningOut = false;
   bool isLoading = false;
   final AuthService _authService = AuthService();
+  ValueNotifier<osm.GeoPoint?> notifier = ValueNotifier(null);
   @override
   void initState() {
     super.initState();
@@ -619,7 +622,6 @@ class _ClubHomePageState extends State<_ClubHomePage> {
                     ],
                   ),
                 ),
-
                 ElevatedButton.icon(
                   onPressed:
                       () => Navigator.of(context).push(
@@ -629,7 +631,8 @@ class _ClubHomePageState extends State<_ClubHomePage> {
                       ),
                   icon: const Icon(Icons.upload_file),
                   label: const Text('CheckoutScreen'),
-                ),  SizedBox(height: 20),
+                ),
+                SizedBox(height: 20),
                 ElevatedButton.icon(
                   onPressed:
                       () => Navigator.of(context).push(
@@ -649,6 +652,94 @@ class _ClubHomePageState extends State<_ClubHomePage> {
                 //   icon: const Icon(Icons.upload_file),
                 //   label: const Text('AddCourseScreen2'),
                 // ),
+                SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    // ElevatedButton.icon(
+                    //   onPressed:
+                    //       () => Navigator.of(context).push(
+                    //         MaterialPageRoute(
+                    //           builder: (_) => LocationStepperPage(),
+                    //         ),
+                    //       ),
+                    //   icon: const Icon(Icons.location_history),
+                    //   label: const Text('Location Page'),
+                    // ),
+                  ],
+                ),
+                Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Text('Lieu'),
+                      notifier.value == null
+                          ? Container()
+                          : Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: ValueListenableBuilder<osm.GeoPoint?>(
+                              valueListenable: notifier,
+                              builder: (ctx, px, child) {
+                                return FutureBuilder<String>(
+                                  future: getAddressFromLatLng(
+                                    px!.latitude,
+                                    px.longitude,
+                                  ),
+                                  builder: (
+                                    BuildContext context,
+                                    AsyncSnapshot<String> snapshot,
+                                  ) {
+                                    if (snapshot.hasData) {
+                                      return Text(snapshot.data!);
+                                    } else if (snapshot.hasError) {
+                                      return Text('Erreur: ${snapshot.error}');
+                                    } else {
+                                      return CircularProgressIndicator();
+                                    }
+                                  },
+                                );
+
+                                //   Center(
+                                //   child: Text(
+                                //     "${px?.latitude.toString()} - ${px?.longitude.toString()}" ??
+                                //         '',
+                                //     textAlign: TextAlign.center,
+                                //   ),
+                                // );
+                              },
+                            ),
+                          ),
+                      // ValueListenableBuilder<GeoPoint?>(
+                      //   valueListenable: notifier,
+                      //   builder: (ctx, p, child) {
+                      //     return Center(
+                      //       child: Text(
+                      //         "${p?.toString() ?? ""}",
+                      //         textAlign: TextAlign.center,
+                      //       ),
+                      //     );
+                      //   },
+                      // ),
+                      IconButton(
+                        onPressed: () async {
+                          var p = await Navigator.of(context).push(
+                            MaterialPageRoute(builder: (ctx) => SearchPage()),
+                          );
+                          print(
+                            'ppppppppppppppppppppppppppppppppppppppppppppppppppp',
+                          );
+                          print(p);
+                          if (p != null) {
+                            setState(() => notifier.value = p);
+                          }
+                        },
+                        icon: Icon(Icons.location_searching),
+                      ),
+                    ],
+                  ),
+                ),
                 SizedBox(height: 20),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1004,6 +1095,17 @@ class _ClubHomePageState extends State<_ClubHomePage> {
         ),
       );
     }
+  }
+
+  Future<String> getAddressFromLatLng(double lat, double lng) async {
+    final List<Placemark> placemarks = await placemarkFromCoordinates(lat, lng);
+
+    if (placemarks.isNotEmpty) {
+      final Placemark place = placemarks.first;
+      return "${place.locality}, ${place.country}"; //${place.street}, ${place.postalCode},
+    }
+
+    return "";
   }
 }
 

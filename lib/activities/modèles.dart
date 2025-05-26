@@ -62,6 +62,7 @@ class Course {
   final DateTime? saisonEnd;
   final DateTime? editedAt;
   final int? placeNumber;
+  final GeoPoint? location;
 
   Course({
     required this.id,
@@ -77,6 +78,7 @@ class Course {
     this.saisonEnd,
     this.editedAt,
     this.placeNumber,
+    this.location,
   });
   Map<String, dynamic> toMap() {
     return {
@@ -88,6 +90,8 @@ class Course {
       'schedules':
           schedules.map((s) => s.toMap()).toList(), // Convert schedules to maps
       'ageRange': ageRange,
+      'location': location,
+
       'profIds': profIds,
       'createdAt': createdAt,
       'photos': photos,
@@ -107,6 +111,9 @@ class Course {
               ?.map((e) => Schedule.fromMap(e))
               .toList() ??
           [],
+      location:
+          data['location'] is GeoPoint ? data['location'] as GeoPoint : null,
+
       placeNumber: data['placeNumber'] ?? 0,
       saisonEnd: (data['saisonEnd'] as Timestamp?)?.toDate(),
       saisonStart: (data['saisonStart'] as Timestamp?)?.toDate(),
