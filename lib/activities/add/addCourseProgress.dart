@@ -31,7 +31,7 @@ class CheckoutScreen extends StatefulWidget {
 
 class _CheckoutScreenState extends State<CheckoutScreen> {
   int _currentStep = 0;
-  final _formKey = GlobalKey<FormState>();
+  final _formKey1 = GlobalKey<FormState>();
   final _courseNameController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _placeNumberController = TextEditingController();
@@ -275,6 +275,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     }
   }
 
+  final GlobalKey<_CotisationPricesStepState> _cotisationStepKey = GlobalKey();
+
+  Map<String, double> _cotisationPrices = {};
   @override
   Widget build(BuildContext context) {
     final stepTitles = const [
@@ -283,7 +286,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       'Professeurs / Coachs',
       'Les Jours & Horaires',
       'Saison',
-      // 'Localisation', // Nouvelle étape
+      'Localisation', // Nouvelle étape
       'Aperçu',
     ];
     final stepProvider = Provider.of<StepProvider>(context);
@@ -300,463 +303,387 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           children: [
             StepProgressHeader(steps: stepTitles),
             Expanded(
-              child: Form(
-                key: _formKey,
-                child: IndexedStack(
-                  index: stepProvider.currentStep,
-                  children: [
-                    // Contenu de l'étape 0 : Informations de base
-                    ListView(
-                      children: [
-                        SizedBox(height: 50),
-                        TextFormField(
-                          controller: _courseNameController,
-                          decoration: InputDecoration(
-                            hintText: 'Nom du cours',
-                            filled: true,
-                            fillColor: Theme.of(context).colorScheme.surfaceDim,
-
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 14,
-                            ),
-                            border: OutlineInputBorder(
-                              borderSide: BorderSide.none,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          textCapitalization: TextCapitalization.words,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Veuillez entrer un nom de cours';
-                            }
-                            return null;
-                          },
-                        ),
-                        SizedBox(height: 20),
-                        TextFormField(
-                          controller: _descriptionController,
-                          textCapitalization: TextCapitalization.words,
-                          minLines: 4,
-                          maxLines: 6,
-                          decoration: InputDecoration(
-                            hintText: 'Déscription',
-                            filled: true,
-                            fillColor: Theme.of(context).colorScheme.surfaceDim,
-
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 14,
-                            ),
-                            border: OutlineInputBorder(
-                              borderSide: BorderSide.none,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Veuillez entrer une description';
-                            }
-                            return null;
-                          },
-                        ),
-                        SizedBox(height: 20),
-                        Row(
+              child: IndexedStack(
+                index: stepProvider.currentStep,
+                children: [
+                  // Contenu de l'étape 0 : Informations de base
+                  ListView(
+                    children: [
+                      Form(
+                        key: _formKey1,
+                        autovalidateMode: AutovalidateMode.disabled,
+                        child: Column(
                           children: [
-                            Expanded(
-                              child: Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: FittedBox(
-                                  child: Text(
-                                    'Nombre de Place',
-                                    style: TextStyle(fontSize: 18),
-                                  ),
+                            SizedBox(height: 50),
+                            TextFormField(
+                              controller: _courseNameController,
+                              decoration: InputDecoration(
+                                hintText: 'Nom du cours',
+                                filled: true,
+                                fillColor:
+                                    Theme.of(context).colorScheme.surfaceDim,
+
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 14,
+                                ),
+                                border: OutlineInputBorder(
+                                  borderSide: BorderSide.none,
+                                  borderRadius: BorderRadius.circular(12),
                                 ),
                               ),
+                              textCapitalization: TextCapitalization.words,
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Veuillez entrer un nom de cours';
+                                }
+                                return null;
+                              },
                             ),
-                            SizedBox(width: 20),
-                            Expanded(
-                              child: TextFormField(
-                                controller: _placeNumberController,
-                                keyboardType: TextInputType.number,
-                                textAlign: TextAlign.center,
-                                decoration: InputDecoration(
-                                  filled: true,
-                                  fillColor:
-                                      Theme.of(context).colorScheme.surfaceDim,
+                            SizedBox(height: 20),
+                            TextFormField(
+                              controller: _descriptionController,
+                              textCapitalization: TextCapitalization.words,
+                              minLines: 4,
+                              maxLines: 6,
+                              decoration: InputDecoration(
+                                hintText: 'Déscription',
+                                filled: true,
+                                fillColor:
+                                    Theme.of(context).colorScheme.surfaceDim,
 
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 14,
-                                  ),
-                                  border: OutlineInputBorder(
-                                    borderSide: BorderSide.none,
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 14,
                                 ),
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Veuillez entrer le Nombre de Place';
-                                  }
-                                  return null;
-                                },
+                                border: OutlineInputBorder(
+                                  borderSide: BorderSide.none,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
                               ),
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Veuillez entrer une description';
+                                }
+                                return null;
+                              },
                             ),
-                          ],
-                        ),
-                        SizedBox(height: 16),
-                        Card(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(15.0),
-                            side: BorderSide(
-                              color: Theme.of(context).colorScheme.surfaceDim,
-                              width: 2.0,
-                            ), // Bordure colorée
-                          ),
-                          elevation: 8, // Ombre plus prononcée
-                          margin: EdgeInsets.symmetric(vertical: 8.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.all(20.0),
-                                child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      "Tranche d'âge*",
-                                      style: TextStyle(fontSize: 16),
-                                    ),
-                                    if (_ageRangeError != null)
-                                      Text(
-                                        _ageRangeError!,
-                                        style: TextStyle(
-                                          color:
-                                              Theme.of(
-                                                context,
-                                              ).colorScheme.error,
-                                        ),
-                                      )
-                                    else
-                                      Text(
-                                        'De ${_ageRange.start.round()} à ${_ageRange.end.round()} ans',
-                                        style:
-                                            Theme.of(
-                                              context,
-                                            ).textTheme.bodyLarge,
-                                      ),
-                                  ],
-                                ),
-                              ),
-                              SizedBox(height: 8),
-                              RangeSlider(
-                                values: _ageRange,
-                                min: 3,
-                                max: 18,
-                                divisions: 15,
-                                labels: RangeLabels(
-                                  '${_ageRange.start.round()} ans',
-                                  '${_ageRange.end.round()} ans',
-                                ),
-                                onChanged: (RangeValues values) {
-                                  setState(() {
-                                    _ageRange = values;
-                                    _ageRangeError = null;
-                                  });
-                                },
-                                onChangeEnd: (values) {
-                                  if (values.end - values.start < 1) {
-                                    setState(() {
-                                      _ageRangeError =
-                                          'La plage doit être d\'au moins 1 an';
-                                    });
-                                  }
-                                },
-                              ),
-                              SizedBox(height: 16),
-                            ],
-                          ),
-                        ),
-                        SizedBox(height: 24),
-                        Center(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Text('Lieu'),
-                              notifier.value == null
-                                  ? Container()
-                                  : Padding(
-                                    padding: const EdgeInsets.all(8.0),
-                                    child: ValueListenableBuilder<
-                                      osm.GeoPoint?
-                                    >(
-                                      valueListenable: notifier,
-                                      builder: (ctx, px, child) {
-                                        return FutureBuilder<String>(
-                                          future: getAddressFromLatLng(
-                                            px!.latitude,
-                                            px.longitude,
-                                          ),
-                                          builder: (
-                                            BuildContext context,
-                                            AsyncSnapshot<String> snapshot,
-                                          ) {
-                                            if (snapshot.hasData) {
-                                              return Text(snapshot.data!);
-                                            } else if (snapshot.hasError) {
-                                              return Text(
-                                                'Erreur: ${snapshot.error}',
-                                              );
-                                            } else {
-                                              return CircularProgressIndicator();
-                                            }
-                                          },
-                                        );
-
-                                        //   Center(
-                                        //   child: Text(
-                                        //     "${px?.latitude.toString()} - ${px?.longitude.toString()}" ??
-                                        //         '',
-                                        //     textAlign: TextAlign.center,
-                                        //   ),
-                                        // );
-                                      },
-                                    ),
-                                  ),
-                              // ValueListenableBuilder<GeoPoint?>(
-                              //   valueListenable: notifier,
-                              //   builder: (ctx, p, child) {
-                              //     return Center(
-                              //       child: Text(
-                              //         "${p?.toString() ?? ""}",
-                              //         textAlign: TextAlign.center,
-                              //       ),
-                              //     );
-                              //   },
-                              // ),
-                              IconButton(
-                                onPressed: () async {
-                                  final osm.GeoPoint? p = await Navigator.of(
-                                    context,
-                                  ).push(
-                                    MaterialPageRoute(
-                                      builder:
-                                          (ctx) =>
-                                              SearchPage(), // retourne GeoPoint de Firestore
-                                    ),
-                                  );
-                                  if (p != null) {
-                                    setState(() => notifier.value = p);
-                                  }
-                                },
-                                icon: Icon(Icons.location_searching),
-                              ),
-                            ],
-                          ),
-                        ),
-                        SizedBox(height: 20),
-                      ],
-                    ),
-                    // Contenu de l'étape 1 : Photos des Cours
-                    ImageStep(
-                      photos: _photos,
-                      onImageAdded: (path) {
-                        setState(() {
-                          _photos.add(path);
-                        });
-                      },
-                    ),
-
-                    // Contenu de l'étape 2 : Professeurs / Coachs
-                    ListView(
-                      children: [
-                        TextField(
-                          controller: _profSearchController,
-                          onChanged:
-                              (value) =>
-                                  filterProfsWithDebounce(), // Avec debounce
-                          // ou
-                          //  onChanged: (value) => filterProfs(), // Version directe
-                          decoration: InputDecoration(
-                            hintText:
-                                'Rechercher par nom, email, rôle ou initiales...',
-                            prefixIcon: Icon(Icons.search),
-                          ),
-                        ),
-                        TextButton(
-                          onPressed:
-                              () => setState(
-                                () => _showAddProfForm = !_showAddProfForm,
-                              ),
-                          child: Center(
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
+                            SizedBox(height: 20),
+                            Row(
                               children: [
-                                Icon(
-                                  _showAddProfForm ? Icons.remove : Icons.add,
-                                  size: 20,
+                                Expanded(
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: FittedBox(
+                                      child: Text(
+                                        'Nombre de Place',
+                                        style: TextStyle(fontSize: 18),
+                                      ),
+                                    ),
+                                  ),
                                 ),
-                                SizedBox(width: 8),
-                                Text(
-                                  _showAddProfForm
-                                      ? 'Masquer le formulaire'
-                                      : 'Ajouter un nouveau Coach',
+                                SizedBox(width: 20),
+                                Expanded(
+                                  child: TextFormField(
+                                    controller: _placeNumberController,
+                                    keyboardType: TextInputType.number,
+                                    textAlign: TextAlign.center,
+                                    decoration: InputDecoration(
+                                      filled: true,
+                                      fillColor:
+                                          Theme.of(
+                                            context,
+                                          ).colorScheme.surfaceDim,
+
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                            horizontal: 16,
+                                            vertical: 14,
+                                          ),
+                                      border: OutlineInputBorder(
+                                        borderSide: BorderSide.none,
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                    validator: (value) {
+                                      if (value == null || value.isEmpty) {
+                                        return 'Veuillez entrer le Nombre de Place';
+                                      }
+                                      return null;
+                                    },
+                                  ),
                                 ),
                               ],
                             ),
-                          ),
+                          ],
                         ),
-                        if (_showAddProfForm) ...[
-                          SizedBox(height: 16),
-                          TextFormField(
-                            controller: _newProfNameController,
-                            decoration: InputDecoration(
-                              labelText: 'Nom du Coach/Professeur*',
-                              border: OutlineInputBorder(),
-                            ),
-                            validator:
-                                (value) =>
-                                    value?.isEmpty ?? true
-                                        ? 'Ce champ est obligatoire'
-                                        : null,
-                          ),
-                          SizedBox(height: 8),
-                          TextFormField(
-                            controller: _newProfEmailController,
-                            decoration: InputDecoration(
-                              labelText: 'Email du Coach/Professeur*',
-                              border: OutlineInputBorder(),
-                            ),
-                            keyboardType: TextInputType.emailAddress,
-                            validator:
-                                (value) =>
-                                    value?.isEmpty ?? true
-                                        ? 'Ce champ est obligatoire'
-                                        : null,
-                          ),
-                          SizedBox(height: 8),
-                          SizedBox(height: 12),
-
-                          // Dropdown pour le rôle
-                          DropdownButtonFormField<String>(
-                            value: _selectedRole,
-                            decoration: InputDecoration(
-                              labelText: 'Rôle',
-                              border: OutlineInputBorder(),
-                              prefixIcon: Icon(Icons.work),
-                            ),
-                            items:
-                                _roles.map((String role) {
-                                  return DropdownMenuItem<String>(
-                                    value: role,
-                                    child: Text(
-                                      role.substring(0, 1).toUpperCase() +
-                                          role.substring(1),
+                      ),
+                      SizedBox(height: 16),
+                      Card(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15.0),
+                          side: BorderSide(
+                            color: Theme.of(context).colorScheme.surfaceDim,
+                            width: 2.0,
+                          ), // Bordure colorée
+                        ),
+                        elevation: 8, // Ombre plus prononcée
+                        margin: EdgeInsets.symmetric(vertical: 8.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.all(20.0),
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    "Tranche d'âge*",
+                                    style: TextStyle(fontSize: 16),
+                                  ),
+                                  if (_ageRangeError != null)
+                                    Text(
+                                      _ageRangeError!,
+                                      style: TextStyle(
+                                        color:
+                                            Theme.of(context).colorScheme.error,
+                                      ),
+                                    )
+                                  else
+                                    Text(
+                                      'De ${_ageRange.start.round()} à ${_ageRange.end.round()} ans',
+                                      style:
+                                          Theme.of(context).textTheme.bodyLarge,
                                     ),
-                                  );
-                                }).toList(),
-                            onChanged: (String? newValue) {
-                              setState(() {
-                                _selectedRole = newValue!;
-                              });
-                            },
-                          ),
-                          SizedBox(height: 16),
-                          ElevatedButton(
-                            onPressed: _addNewProf,
-                            child: Text('Enregistrer le Coach/Professeur'),
-                            style: ElevatedButton.styleFrom(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 20,
-                                vertical: 10,
+                                ],
                               ),
                             ),
-                          ),
-                          SizedBox(height: 16),
-                        ],
-
-                        // Affichage des profs filtrés
-                        Consumer<ProfProvider>(
-                          builder: (context, professorsProvider, child) {
-                            final profsToShow =
-                                _filteredProfs.isEmpty
-                                    ? professorsProvider.professors
-                                    : _filteredProfs;
-
-                            if (profsToShow.isEmpty) {
-                              return Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 16.0,
-                                ),
-                                child: Text(
-                                  'Aucun Coach/Professeur trouvé',
-                                  style: TextStyle(color: Colors.grey),
-                                ),
-                              );
-                            } else {
-                              return Column(
-                                children:
-                                    profsToShow.take(3).map((prof) {
-                                      final isSelected = _selectedProfs
-                                          .contains(prof);
-                                      return CheckboxListTile(
-                                        title: Text(
-                                          prof.role.capitalize() +
-                                              ' ' +
-                                              prof.name.capitalize(),
+                            SizedBox(height: 8),
+                            RangeSlider(
+                              values: _ageRange,
+                              min: 3,
+                              max: 18,
+                              divisions: 15,
+                              labels: RangeLabels(
+                                '${_ageRange.start.round()} ans',
+                                '${_ageRange.end.round()} ans',
+                              ),
+                              onChanged: (RangeValues values) {
+                                setState(() {
+                                  _ageRange = values;
+                                  _ageRangeError = null;
+                                });
+                              },
+                              onChangeEnd: (values) {
+                                if (values.end - values.start < 1) {
+                                  setState(() {
+                                    _ageRangeError =
+                                        'La plage doit être d\'au moins 1 an';
+                                  });
+                                }
+                              },
+                            ),
+                            SizedBox(height: 16),
+                          ],
+                        ),
+                      ),
+                      SizedBox(height: 24),
+                      Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Text('Lieu'),
+                            notifier.value == null
+                                ? Container()
+                                : Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: ValueListenableBuilder<osm.GeoPoint?>(
+                                    valueListenable: notifier,
+                                    builder: (ctx, px, child) {
+                                      return FutureBuilder<String>(
+                                        future: getAddressFromLatLng(
+                                          px!.latitude,
+                                          px.longitude,
                                         ),
-                                        subtitle: Text(prof.email),
-                                        value: isSelected,
-                                        onChanged:
-                                            (_) => _toggleProfSelection(prof),
+                                        builder: (
+                                          BuildContext context,
+                                          AsyncSnapshot<String> snapshot,
+                                        ) {
+                                          if (snapshot.hasData) {
+                                            return Text(snapshot.data!);
+                                          } else if (snapshot.hasError) {
+                                            return Text(
+                                              'Erreur: ${snapshot.error}',
+                                            );
+                                          } else {
+                                            return CircularProgressIndicator();
+                                          }
+                                        },
                                       );
-                                    }).toList(),
-                              );
-                            }
+
+                                      //   Center(
+                                      //   child: Text(
+                                      //     "${px?.latitude.toString()} - ${px?.longitude.toString()}" ??
+                                      //         '',
+                                      //     textAlign: TextAlign.center,
+                                      //   ),
+                                      // );
+                                    },
+                                  ),
+                                ),
+                            // ValueListenableBuilder<GeoPoint?>(
+                            //   valueListenable: notifier,
+                            //   builder: (ctx, p, child) {
+                            //     return Center(
+                            //       child: Text(
+                            //         "${p?.toString() ?? ""}",
+                            //         textAlign: TextAlign.center,
+                            //       ),
+                            //     );
+                            //   },
+                            // ),
+                            IconButton(
+                              onPressed: () async {
+                                final osm.GeoPoint? p = await Navigator.of(
+                                  context,
+                                ).push(
+                                  MaterialPageRoute(
+                                    builder:
+                                        (ctx) =>
+                                            SearchPage(), // retourne GeoPoint de Firestore
+                                  ),
+                                );
+                                if (p != null) {
+                                  setState(() => notifier.value = p);
+                                }
+                              },
+                              icon: Icon(Icons.location_searching),
+                            ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(height: 20),
+                    ],
+                  ),
+                  // prices and type cotisations
+                  CotisationPricesStep(
+                    key: _cotisationStepKey,
+                    initialPrices: _cotisationPrices,
+                    onPricesChanged: (prices) {
+                      setState(() => _cotisationPrices = prices);
+                    },
+                  ),
+                  // Contenu de l'étape 1 : Photos des Cours
+                  ImageStep(
+                    photos: _photos,
+                    onImageAdded: (path) {
+                      setState(() {
+                        _photos.add(path);
+                      });
+                    },
+                  ),
+
+                  // Contenu de l'étape 2 : Professeurs / Coachs
+                  ListView(
+                    children: [
+                      TextField(
+                        controller: _profSearchController,
+                        onChanged:
+                            (value) =>
+                                filterProfsWithDebounce(), // Avec debounce
+                        // ou
+                        //  onChanged: (value) => filterProfs(), // Version directe
+                        decoration: InputDecoration(
+                          hintText:
+                              'Rechercher par nom, email, rôle ou initiales...',
+                          prefixIcon: Icon(Icons.search),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed:
+                            () => setState(
+                              () => _showAddProfForm = !_showAddProfForm,
+                            ),
+                        child: Center(
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                _showAddProfForm ? Icons.remove : Icons.add,
+                                size: 20,
+                              ),
+                              SizedBox(width: 8),
+                              Text(
+                                _showAddProfForm
+                                    ? 'Masquer le formulaire'
+                                    : 'Ajouter un nouveau Coach',
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      if (_showAddProfForm) ...[
+                        SizedBox(height: 16),
+                        TextFormField(
+                          controller: _newProfNameController,
+                          decoration: InputDecoration(
+                            labelText: 'Nom du Coach/Professeur*',
+                            border: OutlineInputBorder(),
+                          ),
+                          validator:
+                              (value) =>
+                                  value?.isEmpty ?? true
+                                      ? 'Ce champ est obligatoire'
+                                      : null,
+                        ),
+                        SizedBox(height: 8),
+                        TextFormField(
+                          controller: _newProfEmailController,
+                          decoration: InputDecoration(
+                            labelText: 'Email du Coach/Professeur*',
+                            border: OutlineInputBorder(),
+                          ),
+                          keyboardType: TextInputType.emailAddress,
+                          validator:
+                              (value) =>
+                                  value?.isEmpty ?? true
+                                      ? 'Ce champ est obligatoire'
+                                      : null,
+                        ),
+                        SizedBox(height: 8),
+                        SizedBox(height: 12),
+
+                        // Dropdown pour le rôle
+                        DropdownButtonFormField<String>(
+                          value: _selectedRole,
+                          decoration: InputDecoration(
+                            labelText: 'Rôle',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.work),
+                          ),
+                          items:
+                              _roles.map((String role) {
+                                return DropdownMenuItem<String>(
+                                  value: role,
+                                  child: Text(
+                                    role.substring(0, 1).toUpperCase() +
+                                        role.substring(1),
+                                  ),
+                                );
+                              }).toList(),
+                          onChanged: (String? newValue) {
+                            setState(() {
+                              _selectedRole = newValue!;
+                            });
                           },
                         ),
-                        SizedBox(height: 20),
-                        if (_selectedProfs.isNotEmpty) ...[
-                          // Text(
-                          //   'Coachs/Professeurs sélectionnés:',
-                          //   style: TextStyle(fontWeight: FontWeight.bold),
-                          // ),
-                          Wrap(
-                            spacing: 8,
-                            children:
-                                _selectedProfs.map((prof) {
-                                  return Chip(
-                                    avatar:
-                                        prof.logoUrl != null
-                                            ? CircleAvatar(
-                                              backgroundImage:
-                                                  CachedNetworkImageProvider(
-                                                    prof.logoUrl!,
-                                                  ),
-                                            )
-                                            : CircleAvatar(
-                                              child: Icon(Icons.person),
-                                            ),
-                                    label: Text(prof.name),
-                                    deleteIcon: Icon(Icons.close, size: 18),
-                                    onDeleted: () => _toggleProfSelection(prof),
-                                  );
-                                }).toList(),
-                          ),
-                          SizedBox(height: 20),
-                        ],
-                      ],
-                    ),
-                    // Contenu de l'étape 3 : Les Jours & Horaires
-                    ListView(
-                      children: [
+                        SizedBox(height: 16),
                         ElevatedButton(
-                          onPressed: _addSchedule,
-
-                          child: Text('Ajouter un horaire'),
+                          onPressed: _addNewProf,
+                          child: Text('Enregistrer le Coach/Professeur'),
                           style: ElevatedButton.styleFrom(
                             padding: EdgeInsets.symmetric(
                               horizontal: 20,
@@ -764,123 +691,72 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                             ),
                           ),
                         ),
-                        SizedBox(height: 20),
-                        Consumer<CourseProvider>(
-                          builder: (context, provider, child) {
-                            if (provider.schedules.isNotEmpty) {
-                              return Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  SizedBox(height: 16),
-                                  Text(
-                                    'Horaires ajoutés:',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                  SizedBox(height: 8),
-                                  ...provider.schedules.map((schedule) {
-                                    return Card(
-                                      margin: EdgeInsets.symmetric(vertical: 4),
-                                      child: ListTile(
-                                        onLongPress:
-                                            () => provider.removeSchedule(
-                                              schedule,
-                                            ),
-                                        leading: Column(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            Text(
-                                              '${DateFormat.Hm().format(schedule.startTime)}',
-                                            ),
-                                            Text(
-                                              '${DateFormat.Hm().format(schedule.endTime)}',
-                                            ),
-                                          ],
-                                        ),
-                                        title: Text(
-                                          schedule.days.join(", "),
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                        // subtitle: Text(
-                                        //   '${DateFormat.Hm().format(schedule.startTime)} - ${DateFormat.Hm().format(schedule.endTime)}',
-                                        // ),
-                                        trailing: IconButton(
-                                          icon: Icon(
-                                            Icons.delete,
-                                            color: Colors.red,
-                                          ),
-                                          onPressed:
-                                              () => provider.removeSchedule(
-                                                schedule,
-                                              ),
-                                        ),
+                        SizedBox(height: 16),
+                      ],
+
+                      // Affichage des profs filtrés
+                      Consumer<ProfProvider>(
+                        builder: (context, professorsProvider, child) {
+                          final profsToShow =
+                              _filteredProfs.isEmpty
+                                  ? professorsProvider.professors
+                                  : _filteredProfs;
+
+                          if (profsToShow.isEmpty) {
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 16.0,
+                              ),
+                              child: Text(
+                                'Aucun Coach/Professeur trouvé',
+                                style: TextStyle(color: Colors.grey),
+                              ),
+                            );
+                          } else {
+                            return Column(
+                              children:
+                                  profsToShow.take(3).map((prof) {
+                                    final isSelected = _selectedProfs.contains(
+                                      prof,
+                                    );
+                                    return CheckboxListTile(
+                                      title: Text(
+                                        prof.role.capitalize() +
+                                            ' ' +
+                                            prof.name.capitalize(),
                                       ),
+                                      subtitle: Text(prof.email),
+                                      value: isSelected,
+                                      onChanged:
+                                          (_) => _toggleProfSelection(prof),
                                     );
                                   }).toList(),
-                                  SizedBox(height: 20),
-                                ],
-                              );
-                            } else {
-                              return SizedBox.shrink();
-                            }
-                          },
-                        ),
-                      ],
-                    ),
-                    // Contenu de l'étape 4 : Saison
-                    ListView(
-                      children: [
-                        SaisonForm(
-                          debutController: debutController,
-                          finController: finController,
-                          formKey: saisonFormKey,
-                        ),
-                      ],
-                    ),
-                    // Ajoutez le widget LocationStep pour la nouvelle étape
-
-                    // Contenu de l'étape 5 : Aperçu
-                    ListView(
-                      //crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Nom du cours: ${_courseNameController.text}'),
-                        Text('Description: ${_descriptionController.text}'),
-                        Text('Nombre de Place: ${_placeNumberController.text}'),
-                        Text(
-                          'Tranche d\'âge: ${_ageRange.start.round()} - ${_ageRange.end.round()} ans',
-                        ),
-                        SizedBox(height: 20),
-                        Text(
-                          'Photos des cours:',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        Wrap(
-                          spacing: 8,
-                          children:
-                              _photos.map((photo) {
-                                return Image.file(
-                                  File(photo),
-                                  width: 100,
-                                  height: 100,
-                                  fit: BoxFit.cover,
-                                );
-                              }).toList(),
-                        ),
-                        SizedBox(height: 20),
-                        Text(
-                          'Professeurs:',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
+                            );
+                          }
+                        },
+                      ),
+                      SizedBox(height: 20),
+                      if (_selectedProfs.isNotEmpty) ...[
+                        // Text(
+                        //   'Coachs/Professeurs sélectionnés:',
+                        //   style: TextStyle(fontWeight: FontWeight.bold),
+                        // ),
                         Wrap(
                           spacing: 8,
                           children:
                               _selectedProfs.map((prof) {
                                 return Chip(
+                                  avatar:
+                                      prof.logoUrl != null
+                                          ? CircleAvatar(
+                                            backgroundImage:
+                                                CachedNetworkImageProvider(
+                                                  prof.logoUrl!,
+                                                ),
+                                          )
+                                          : CircleAvatar(
+                                            child: Icon(Icons.person),
+                                          ),
                                   label: Text(prof.name),
                                   deleteIcon: Icon(Icons.close, size: 18),
                                   onDeleted: () => _toggleProfSelection(prof),
@@ -888,157 +764,294 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                               }).toList(),
                         ),
                         SizedBox(height: 20),
-                        Card(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(15.0),
-                            side: BorderSide(
-                              color: Colors.blueAccent,
-                              width: 2.0,
-                            ), // Bordure colorée
+                      ],
+                    ],
+                  ),
+                  // Contenu de l'étape 3 : Les Jours & Horaires
+                  ListView(
+                    children: [
+                      ElevatedButton(
+                        onPressed: _addSchedule,
+
+                        child: Text('Ajouter un horaire'),
+                        style: ElevatedButton.styleFrom(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 10,
                           ),
-                          elevation: 8, // Ombre plus prononcée
-                          margin: EdgeInsets.symmetric(
-                            vertical: 8.0,
-                          ), // Marge extérieure
-                          child: Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Column(
+                        ),
+                      ),
+                      SizedBox(height: 20),
+                      Consumer<CourseProvider>(
+                        builder: (context, provider, child) {
+                          if (provider.schedules.isNotEmpty) {
+                            return Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
+                                SizedBox(height: 16),
                                 Text(
-                                  'Saison:',
+                                  'Horaires ajoutés:',
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
-                                    fontSize: 18,
-                                    color:
-                                        Colors.blueAccent, // Couleur du texte
+                                    fontSize: 16,
                                   ),
                                 ),
-                                Divider(
-                                  color: Colors.blueAccent,
-                                  thickness: 1.5,
-                                ), // Ligne de séparation
-                                SizedBox(height: 12),
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          'Début',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.grey[700],
+                                SizedBox(height: 8),
+                                ...provider.schedules.map((schedule) {
+                                  return Card(
+                                    margin: EdgeInsets.symmetric(vertical: 4),
+                                    child: ListTile(
+                                      onLongPress:
+                                          () =>
+                                              provider.removeSchedule(schedule),
+                                      leading: Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Text(
+                                            '${DateFormat.Hm().format(schedule.startTime)}',
                                           ),
-                                        ),
-                                        SizedBox(height: 4),
-                                        Text(
-                                          dateDebut != null
-                                              ? DateFormat(
-                                                'dd/MM/yyyy',
-                                              ).format(dateDebut!)
-                                              : '??',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 16,
-                                            color: Colors.black87,
+                                          Text(
+                                            '${DateFormat.Hm().format(schedule.endTime)}',
                                           ),
-                                        ),
-                                      ],
-                                    ),
-                                    Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.end,
-                                      children: [
-                                        Text(
-                                          'Fin',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.grey[700],
-                                          ),
-                                        ),
-                                        SizedBox(height: 4),
-                                        Text(
-                                          dateFin != null
-                                              ? DateFormat(
-                                                'dd/MM/yyyy',
-                                              ).format(dateFin!)
-                                              : '??',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 16,
-                                            color: Colors.black87,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-
-                        // Dans l'étape Aperçu
-                        // Ajoutez l'affichage de la localisation dans l'aperçu
-                        SizedBox(height: 20),
-                        // Affichage des horaires
-                        SizedBox(height: 20),
-                        Text(
-                          'Horaires:',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        Consumer<CourseProvider>(
-                          builder: (context, provider, child) {
-                            if (provider.schedules.isNotEmpty) {
-                              _schedules = provider.schedules;
-                              return Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  SizedBox(height: 16),
-                                  Text(
-                                    'Horaires ajoutés:',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                  SizedBox(height: 8),
-                                  ...provider.schedules.map((schedule) {
-                                    return Card(
-                                      margin: EdgeInsets.symmetric(vertical: 4),
-                                      child: ListTile(
-                                        title: Text(
-                                          schedule.days.join(", "),
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                        subtitle: Text(
-                                          '${DateFormat.Hm().format(schedule.startTime)} - ${DateFormat.Hm().format(schedule.endTime)}',
+                                        ],
+                                      ),
+                                      title: Text(
+                                        schedule.days.join(", "),
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w500,
                                         ),
                                       ),
-                                    );
-                                  }).toList(),
-                                ],
+                                      // subtitle: Text(
+                                      //   '${DateFormat.Hm().format(schedule.startTime)} - ${DateFormat.Hm().format(schedule.endTime)}',
+                                      // ),
+                                      trailing: IconButton(
+                                        icon: Icon(
+                                          Icons.delete,
+                                          color: Colors.red,
+                                        ),
+                                        onPressed:
+                                            () => provider.removeSchedule(
+                                              schedule,
+                                            ),
+                                      ),
+                                    ),
+                                  );
+                                }).toList(),
+                                SizedBox(height: 20),
+                              ],
+                            );
+                          } else {
+                            return SizedBox.shrink();
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                  // Contenu de l'étape 4 : Saison
+                  ListView(
+                    children: [
+                      SaisonForm(
+                        debutController: debutController,
+                        finController: finController,
+                        formKey: saisonFormKey,
+                      ),
+                    ],
+                  ),
+                  // Ajoutez le widget LocationStep pour la nouvelle étape
+
+                  // Contenu de l'étape 5 : Aperçu
+                  ListView(
+                    //crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Nom du cours: ${_courseNameController.text}'),
+                      Text('Description: ${_descriptionController.text}'),
+                      Text('Nombre de Place: ${_placeNumberController.text}'),
+                      Text(
+                        'Tranche d\'âge: ${_ageRange.start.round()} - ${_ageRange.end.round()} ans',
+                      ),
+                      SizedBox(height: 20),
+                      Text(
+                        'Photos des cours:',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      Wrap(
+                        spacing: 8,
+                        children:
+                            _photos.map((photo) {
+                              return Image.file(
+                                File(photo),
+                                width: 100,
+                                height: 100,
+                                fit: BoxFit.cover,
                               );
-                            } else {
-                              return SizedBox.shrink();
-                            }
-                          },
+                            }).toList(),
+                      ),
+                      SizedBox(height: 20),
+                      Text(
+                        'Professeurs:',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      Wrap(
+                        spacing: 8,
+                        children:
+                            _selectedProfs.map((prof) {
+                              return Chip(
+                                label: Text(prof.name),
+                                deleteIcon: Icon(Icons.close, size: 18),
+                                onDeleted: () => _toggleProfSelection(prof),
+                              );
+                            }).toList(),
+                      ),
+                      SizedBox(height: 20),
+                      Card(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15.0),
+                          side: BorderSide(
+                            color: Colors.blueAccent,
+                            width: 2.0,
+                          ), // Bordure colorée
                         ),
-                        SizedBox(height: 20),
-                        ElevatedButton(
-                          onPressed: _saveCourse,
-                          child: Text('Submit to Storage'),
+                        elevation: 8, // Ombre plus prononcée
+                        margin: EdgeInsets.symmetric(
+                          vertical: 8.0,
+                        ), // Marge extérieure
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Saison:',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 18,
+                                  color: Colors.blueAccent, // Couleur du texte
+                                ),
+                              ),
+                              Divider(
+                                color: Colors.blueAccent,
+                                thickness: 1.5,
+                              ), // Ligne de séparation
+                              SizedBox(height: 12),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Début',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.grey[700],
+                                        ),
+                                      ),
+                                      SizedBox(height: 4),
+                                      Text(
+                                        dateDebut != null
+                                            ? DateFormat(
+                                              'dd/MM/yyyy',
+                                            ).format(dateDebut!)
+                                            : '??',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                          color: Colors.black87,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      Text(
+                                        'Fin',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.grey[700],
+                                        ),
+                                      ),
+                                      SizedBox(height: 4),
+                                      Text(
+                                        dateFin != null
+                                            ? DateFormat(
+                                              'dd/MM/yyyy',
+                                            ).format(dateFin!)
+                                            : '??',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                          color: Colors.black87,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
-                      ],
-                    ),
-                  ],
-                ),
+                      ),
+
+                      // Dans l'étape Aperçu
+                      // Ajoutez l'affichage de la localisation dans l'aperçu
+                      SizedBox(height: 20),
+                      // Affichage des horaires
+                      SizedBox(height: 20),
+                      Text(
+                        'Horaires:',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      Consumer<CourseProvider>(
+                        builder: (context, provider, child) {
+                          if (provider.schedules.isNotEmpty) {
+                            _schedules = provider.schedules;
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                SizedBox(height: 16),
+                                Text(
+                                  'Horaires ajoutés:',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                SizedBox(height: 8),
+                                ...provider.schedules.map((schedule) {
+                                  return Card(
+                                    margin: EdgeInsets.symmetric(vertical: 4),
+                                    child: ListTile(
+                                      title: Text(
+                                        schedule.days.join(", "),
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                      subtitle: Text(
+                                        '${DateFormat.Hm().format(schedule.startTime)} - ${DateFormat.Hm().format(schedule.endTime)}',
+                                      ),
+                                    ),
+                                  );
+                                }).toList(),
+                              ],
+                            );
+                          } else {
+                            return SizedBox.shrink();
+                          }
+                        },
+                      ),
+                      SizedBox(height: 20),
+                      ElevatedButton(
+                        onPressed: _saveCourse,
+                        child: Text('Submit to Storage'),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
             Row(
@@ -1620,38 +1633,43 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   bool _validateCurrentStep() {
-    final stepProvider = Provider.of<StepProvider>(context);
+    final stepProvider = Provider.of<StepProvider>(context, listen: true);
     switch (stepProvider.currentStep) {
       case 0:
-        return _validateStep0();
+        return _formKey1.currentState?.validate() ?? false;
       case 1:
-        return _validateStep1();
+        return _cotisationPrices.isNotEmpty; // À maintenir à jour
       case 2:
-        return _validateStep2();
+        return _photos.isNotEmpty;
       case 3:
-        return _validateStep3();
+        return _selectedProfs.isNotEmpty;
       case 4:
-        return _validateStep4();
-
+        return _schedules.isNotEmpty;
+      case 5:
+        return saisonFormKey.currentState?.validate() ?? false;
       default:
         return false;
     }
   }
 
   bool _validateStep0() {
-    return _formKey.currentState?.validate() ?? false;
+    return _formKey1.currentState?.validate() ?? false;
   }
 
   bool _validateStep1() {
-    return _photos.isNotEmpty; // Assuming at least one photo is required
+    return _cotisationStepKey.currentState?.validate() ?? false;
   }
 
   bool _validateStep2() {
+    return _photos.isNotEmpty; // Assuming at least one photo is required
+  }
+
+  bool _validateStep3() {
     return _selectedProfs
         .isNotEmpty; // Assuming at least one professor is required
   }
 
-  bool _validateStep3() {
+  bool _validateStep4() {
     // Assuming at least one schedule is required
 
     print(_schedules);
@@ -1662,7 +1680,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     ).schedules.isNotEmpty;
   }
 
-  bool _validateStep4() {
+  bool _validateStep5() {
     return saisonFormKey.currentState?.validate() ??
         false; // Assuming a form key for the season step
   }
@@ -1981,5 +1999,133 @@ class _ImageStepState extends State<ImageStep> {
     if (pickedFile != null) {
       widget.onImageAdded(pickedFile.path);
     }
+  }
+}
+
+class CotisationPricesStep extends StatefulWidget {
+  final Map<String, double> initialPrices;
+  final void Function(Map<String, double>) onPricesChanged;
+
+  const CotisationPricesStep({
+    Key? key,
+    required this.initialPrices,
+    required this.onPricesChanged,
+  }) : super(key: key);
+
+  @override
+  State<CotisationPricesStep> createState() => _CotisationPricesStepState();
+}
+
+class _CotisationPricesStepState extends State<CotisationPricesStep> {
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final TextEditingController _priceController = TextEditingController();
+  String? _selectedType;
+
+  late Map<String, double> _prices;
+
+  final List<String> _cotisationTypes = ['annuel', 'mensuel', 'seance'];
+
+  @override
+  void initState() {
+    super.initState();
+    _prices = Map<String, double>.from(widget.initialPrices);
+  }
+
+  void _addPrice() {
+    if (_formKey.currentState!.validate() && _selectedType != null) {
+      final double? parsedPrice = double.tryParse(_priceController.text);
+      if (parsedPrice != null) {
+        setState(() {
+          _prices[_selectedType!] = parsedPrice;
+          _selectedType = null;
+          _priceController.clear();
+        });
+        widget.onPricesChanged(Map.from(_prices));
+      }
+    }
+  }
+
+  void _removePrice(String type) {
+    setState(() {
+      _prices.remove(type);
+      widget.onPricesChanged(Map.from(_prices));
+    });
+  }
+
+  bool validate() {
+    return _prices.isNotEmpty;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Form(
+          key: _formKey,
+          child: Row(
+            children: [
+              Expanded(
+                flex: 2,
+                child: DropdownButtonFormField<String>(
+                  decoration: const InputDecoration(
+                    labelText: 'Type de cotisation',
+                  ),
+                  value: _selectedType,
+                  items:
+                      _cotisationTypes
+                          .where((type) => !_prices.containsKey(type))
+                          .map(
+                            (type) => DropdownMenuItem(
+                              value: type,
+                              child: Text(type),
+                            ),
+                          )
+                          .toList(),
+                  onChanged: (value) => setState(() => _selectedType = value),
+                  validator:
+                      (value) => value == null ? 'Sélectionnez un type' : null,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                flex: 2,
+                child: TextFormField(
+                  controller: _priceController,
+                  decoration: const InputDecoration(labelText: 'Prix (DA)'),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  validator: (value) {
+                    final parsed = double.tryParse(value ?? '');
+                    if (parsed == null || parsed < 0) {
+                      return 'Prix invalide';
+                    }
+                    return null;
+                  },
+                ),
+              ),
+              IconButton(icon: const Icon(Icons.add), onPressed: _addPrice),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+        if (_prices.isEmpty) const Text('Aucun tarif ajouté pour l’instant.'),
+        ..._prices.entries.map(
+          (entry) => ListTile(
+            title: Text(entry.key[0].toUpperCase() + entry.key.substring(1)),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('${entry.value.toStringAsFixed(2)} DA'),
+                IconButton(
+                  icon: const Icon(Icons.delete, color: Colors.red),
+                  onPressed: () => _removePrice(entry.key),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }

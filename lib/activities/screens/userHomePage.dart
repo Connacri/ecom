@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_osm_plugin/flutter_osm_plugin.dart' as osm;
 import 'package:geocoding/geocoding.dart';
 import 'package:intl/intl.dart';
+import 'package:open_location_picker/open_location_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:timeago/timeago.dart' as timeago;
@@ -17,6 +18,7 @@ import '../../pages/MyApp.dart';
 import '../ParentsScreen.dart';
 import '../aGeo/map/LocationAppExample.dart';
 import '../add/addCourseProgress.dart';
+import '../add/addCoursesNew.dart';
 import '../edition/EditClubScreen.dart';
 import '../generated/multiphoto/PhotoUploadPage.dart';
 import '../generated/profile1.dart';
@@ -475,8 +477,10 @@ class _ClubHomePageState extends State<_ClubHomePage> {
   Widget build(BuildContext context) {
     final user = Provider.of<UserProvider>(context).user;
     final childProvider = Provider.of<ChildProvider>(context);
+
     return user == null
-        ? CustomShimmerEffect()
+        ? Center(child: CircularProgressIndicator())
+        //CustomShimmerEffect()
         : Scaffold(
           appBar: AppBar(
             automaticallyImplyLeading: false,
@@ -631,6 +635,15 @@ class _ClubHomePageState extends State<_ClubHomePage> {
                       ),
                   icon: const Icon(Icons.upload_file),
                   label: const Text('CheckoutScreen'),
+                ),
+                IconButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => StepperDemo()),
+                    );
+                  },
+                  icon: Icon(Icons.add_circle_outline_rounded),
                 ),
                 SizedBox(height: 20),
                 ElevatedButton.icon(
@@ -792,6 +805,7 @@ class _ClubHomePageState extends State<_ClubHomePage> {
                         );
 
                         final course = _courses[index];
+                        final pricesMap = course.pricesByCotisationType ?? {};
                         return Card(
                           margin: EdgeInsets.symmetric(
                             horizontal: 16,
@@ -876,6 +890,8 @@ class _ClubHomePageState extends State<_ClubHomePage> {
                                     ),
                                   ],
                                 ),
+                                buildPricesSection(course),
+
                                 SizedBox(height: 8),
                                 // Display up to 3 images
                                 if (course.photos!.isNotEmpty)
@@ -950,6 +966,76 @@ class _ClubHomePageState extends State<_ClubHomePage> {
                                       ],
                                     ),
                                 SizedBox(height: 8),
+                                Container(
+                                  child:
+                                      course.location == null
+                                          ? null
+                                          : SizedBox(
+                                            height: 200,
+
+                                            child: Stack(
+                                              children: [
+                                                //Text(LatLng(datam!['position'].latitude,datam!['position'].longitude).toString(),)
+                                                FlutterMap(
+                                                  options: MapOptions(
+                                                    center: LatLng(
+                                                      // 'center' au lieu de 'initialCenter'
+                                                      course.location!.latitude,
+                                                      course
+                                                          .location!
+                                                          .longitude,
+                                                    ),
+                                                    zoom:
+                                                        16.0, // 'zoom' au lieu de 'initialZoom'
+                                                  ),
+                                                  children: [
+                                                    TileLayer(
+                                                      urlTemplate:
+                                                          'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                                                      subdomains: [
+                                                        'a',
+                                                        'b',
+                                                        'c',
+                                                      ],
+                                                      minZoom: 1,
+                                                      maxZoom: 18,
+                                                      backgroundColor:
+                                                          Colors.black,
+                                                    ),
+                                                    MarkerLayer(
+                                                      markers: [
+                                                        Marker(
+                                                          width:
+                                                              40, // Taille réduite pour correspondre à l'icône
+                                                          height: 40,
+                                                          point: LatLng(
+                                                            course
+                                                                .location!
+                                                                .latitude,
+                                                            course
+                                                                .location!
+                                                                .longitude,
+                                                          ),
+                                                          builder:
+                                                              (
+                                                                context,
+                                                              ) => const Icon(
+                                                                Icons
+                                                                    .location_on,
+                                                                color:
+                                                                    Colors.red,
+                                                                size: 40,
+                                                              ),
+                                                          // Le builder est inutile ici car on utilise 'child'
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ],
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                ),
                                 Text(
                                   'Horaires:',
                                   style: TextStyle(
@@ -1067,7 +1153,23 @@ class _ClubHomePageState extends State<_ClubHomePage> {
                                   );
                                 }).toList(),
 
-                                Text(timeago.format(course.createdAt!)),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 18,
+                                  ),
+                                  child: Text(
+                                    timeago.format(
+                                      course.createdAt!,
+                                      locale: 'fr',
+                                    ),
+                                    textAlign: TextAlign.start,
+                                    style: const TextStyle(
+                                      color: Colors.black54,
+                                      fontWeight: FontWeight.normal,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
                               ],
                             ),
                           ),
@@ -1106,6 +1208,62 @@ class _ClubHomePageState extends State<_ClubHomePage> {
     }
 
     return "";
+  }
+
+  Widget buildPricesSection(Course course) {
+    final pricesMap = course.pricesByCotisationType ?? {};
+
+    if (pricesMap.isEmpty) {
+      return const Text('Aucun tarif défini.');
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Tarifs selon cotisation :',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 8),
+        ...pricesMap.entries.map((entry) {
+          final type = entry.key;
+          final price = entry.value;
+
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  _cotisationLabel(type),
+                  style: const TextStyle(fontSize: 16),
+                ),
+                Text(
+                  '${price.toStringAsFixed(2)} DA',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
+      ],
+    );
+  }
+
+  String _cotisationLabel(String key) {
+    switch (key) {
+      case 'annuel':
+        return 'Annuel';
+      case 'mensuel':
+        return 'Mensuel';
+      case 'seance':
+        return 'Par séance';
+      default:
+        return key[0].toUpperCase() + key.substring(1);
+    }
   }
 }
 

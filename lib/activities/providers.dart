@@ -4,6 +4,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_osm_plugin/flutter_osm_plugin.dart' as osm;
 
 import 'modèles.dart';
 
@@ -393,7 +394,7 @@ class StepProvider with ChangeNotifier {
   int get currentStep => _currentStep;
 
   void nextStep() {
-    if (_currentStep < 5) {
+    if (_currentStep < 6) {
       _currentStep++;
       notifyListeners();
     }
@@ -408,6 +409,87 @@ class StepProvider with ChangeNotifier {
 
   void reset() {
     _currentStep = 0;
+    notifyListeners();
+  }
+}
+
+class StepProvider1 extends ChangeNotifier {
+  int _currentStep = 0;
+
+  // Propriétés pour le formulaire
+  String? _nom;
+  String? _description;
+  int? _nombrePlaces;
+  RangeValues? _ageRange;
+  osm.GeoPoint? _location;
+  Map<String, double>? _prices;
+
+  // Getters
+  int get currentStep => _currentStep;
+  String? get nom => _nom;
+  String? get description => _description;
+  int? get nombrePlaces => _nombrePlaces;
+  RangeValues? get priceRange => _ageRange;
+  osm.GeoPoint? get location => _location;
+  Map<String, double>? get prices => _prices;
+
+  void nextStep() {
+    _currentStep++;
+    notifyListeners();
+  }
+
+  void previousStep() {
+    if (_currentStep > 0) {
+      _currentStep--;
+      notifyListeners();
+    }
+  }
+
+  void goToStep(int step) {
+    _currentStep = step;
+    notifyListeners();
+  }
+
+  // Méthodes de mise à jour pour le formulaire
+  void updateNom(String nom) {
+    _nom = nom;
+    notifyListeners();
+  }
+
+  void updateDescription(String description) {
+    _description = description;
+    notifyListeners();
+  }
+
+  void updateNombrePlaces(int nombrePlaces) {
+    _nombrePlaces = nombrePlaces;
+    notifyListeners();
+  }
+
+  void updateAgeRange(RangeValues priceRange) {
+    _ageRange = priceRange;
+    notifyListeners();
+  }
+
+  void updateLocation(osm.GeoPoint location) {
+    _location = location;
+    notifyListeners();
+  }
+
+  void updatePrices(Map<String, double> prices) {
+    _prices = Map<String, double>.from(prices);
+    notifyListeners();
+  }
+
+  // Méthode pour réinitialiser les données
+  void reset() {
+    _currentStep = 0;
+    _nom = null;
+    _description = null;
+    _nombrePlaces = null;
+    _ageRange = null;
+    _location = null;
+    _prices = null;
     notifyListeners();
   }
 }

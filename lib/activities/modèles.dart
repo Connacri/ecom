@@ -64,6 +64,11 @@ class Course {
   final int? placeNumber;
   final GeoPoint? location;
 
+  /// Nouveau champ : prix en fonction du type de cotisation
+  final Map<String, double>? pricesByCotisationType;
+
+  final String? cotisationType;
+
   Course({
     required this.id,
     required this.name,
@@ -79,24 +84,28 @@ class Course {
     this.editedAt,
     this.placeNumber,
     this.location,
+    this.pricesByCotisationType,
+    this.cotisationType,
   });
+
   Map<String, dynamic> toMap() {
     return {
       'id': id,
       'name': name,
       'placeNumber': placeNumber,
-      'clubId': clubId, // Include the club ID for reference
+      'clubId': clubId,
       'description': description,
-      'schedules':
-          schedules.map((s) => s.toMap()).toList(), // Convert schedules to maps
+      'schedules': schedules.map((s) => s.toMap()).toList(),
       'ageRange': ageRange,
       'location': location,
-
+      'pricesByCotisationType': pricesByCotisationType,
       'profIds': profIds,
       'createdAt': createdAt,
       'photos': photos,
       'editedAt': editedAt,
-      'saisonStart': saisonStart, 'saisonEnd': saisonEnd,
+      'saisonStart': saisonStart,
+      'saisonEnd': saisonEnd,
+      'cotisationType': cotisationType,
     };
   }
 
@@ -113,7 +122,9 @@ class Course {
           [],
       location:
           data['location'] is GeoPoint ? data['location'] as GeoPoint : null,
-
+      pricesByCotisationType: Map<String, double>.from(
+        data['pricesByCotisationType'] ?? {},
+      ),
       placeNumber: data['placeNumber'] ?? 0,
       saisonEnd: (data['saisonEnd'] as Timestamp?)?.toDate(),
       saisonStart: (data['saisonStart'] as Timestamp?)?.toDate(),
@@ -122,12 +133,17 @@ class Course {
       profIds: List<String>.from(data['profIds'] ?? []),
       createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
       editedAt: (data['editedAt'] as Timestamp?)?.toDate(),
+      cotisationType: data['cotisationType'] ?? 'unknown',
     );
+  }
+
+  double? getPrice(String type) {
+    return pricesByCotisationType?[type];
   }
 
   @override
   String toString() {
-    return 'Course(id: $id, name: $name, club: $clubId, profIds : $profIds,ageRange: $ageRange,)';
+    return 'Course(id: $id, name: $name, club: $clubId, profIds : $profIds, ageRange: $ageRange,)';
   }
 }
 
