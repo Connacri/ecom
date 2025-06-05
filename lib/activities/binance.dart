@@ -11,11 +11,20 @@ class _BinancePageState extends State<BinancePage> {
   String binanceUrl = '';
   String prix = '';
   bool isLoading = true;
+  bool isProcessing = false;
 
   @override
   void initState() {
     super.initState();
     fetchBinanceData();
+  }
+
+  void showLoader() {
+    showDialog(
+      barrierDismissible: false,
+      context: context,
+      builder: (context) => Center(child: CircularProgressIndicator()),
+    );
   }
 
   Future<void> fetchBinanceData() async {
@@ -46,12 +55,20 @@ class _BinancePageState extends State<BinancePage> {
     }
 
     final uri = Uri.parse(binanceUrl);
-    if (await canLaunchUrl(uri) && uri.isAbsolute) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Impossible d'ouvrir le lien Binance.")),
-      );
+    showLoader(); // ➕ Afficher le loader
+
+    try {
+      if (await canLaunchUrl(uri) && uri.isAbsolute) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Impossible d'ouvrir le lien Binance.")),
+        );
+      }
+    } catch (e) {
+      print("Erreur lors de l'ouverture du lien : $e");
+    } finally {
+      Navigator.pop(context); // ➖ Fermer le loader
     }
   }
 
@@ -131,10 +148,12 @@ class _BinancePageState extends State<BinancePage> {
               TextButton(
                 child: Text("Enregistrer"),
                 onPressed: () async {
-                  try {
-                    final newUrl = urlCtrl.text.trim();
-                    final newPrix = prixCtrl.text.trim();
+                  final newUrl = urlCtrl.text.trim();
+                  final newPrix = prixCtrl.text.trim();
 
+                  showLoader(); // ➕ loader avant Firestore
+
+                  try {
                     await FirebaseFirestore.instance
                         .collection('paiement')
                         .doc('binance')
@@ -147,13 +166,16 @@ class _BinancePageState extends State<BinancePage> {
                       binanceUrl = newUrl;
                       prix = newPrix;
                     });
-                    Navigator.pop(context);
+
+                    Navigator.pop(context); // Fermer loader
+                    Navigator.pop(context); // Fermer le AlertDialog d'édition
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text("Données mises à jour avec succès"),
                       ),
                     );
                   } catch (e) {
+                    Navigator.pop(context); // Fermer loader
                     print("Erreur Firestore : $e");
                   }
                 },
@@ -164,41 +186,49 @@ class _BinancePageState extends State<BinancePage> {
   }
 
   Widget buildDonationSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Image.asset(
-          'assets/logos/binancelogo.png', // Assure-toi que ce fichier est bien dans assets et déclaré dans pubspec.yaml
-          height: 50,
-        ),
-        SizedBox(height: 12),
-        Text(
-          "Aidez ce développeur à améliorer l'application !\n"
-          "Un simple café peut faire la différence ☕",
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 16),
-        ),
-        if (prix.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.only(top: 8.0),
-            child: Text(
-              "Montant suggéré : ${prix} €",
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Image.asset(
+            'assets/logos/binancelogo.png', // Assure-toi que ce fichier est bien dans assets et déclaré dans pubspec.yaml
+            height: 250,
+          ),
+          SizedBox(height: 12),
+          Text(
+            "Aider Moi à améliorer l'application !\n"
+            "Un simple café peut faire la différence ☕",
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 20),
+          ),
+          SizedBox(height: 16),
+          ElevatedButton.icon(
+            icon: Icon(Icons.coffee, color: Colors.white, size: 30),
+            label: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  "Pay me a coffee",
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
+                ),
+                if (prix.isNotEmpty) SizedBox(width: 5),
+                if (prix.isNotEmpty)
+                  Text(
+                    "${prix} €",
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
+                  ),
+              ],
+            ),
+            onPressed: openBinanceUrl,
+            style: ElevatedButton.styleFrom(
+              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+              backgroundColor: Colors.orangeAccent,
+              foregroundColor: Colors.white,
+              textStyle: TextStyle(fontSize: 16),
             ),
           ),
-        SizedBox(height: 16),
-        ElevatedButton.icon(
-          icon: Icon(Icons.coffee),
-          label: Text("Pay me a coffee"),
-          onPressed: openBinanceUrl,
-          style: ElevatedButton.styleFrom(
-            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-            backgroundColor: Colors.orangeAccent,
-            foregroundColor: Colors.white,
-            textStyle: TextStyle(fontSize: 16),
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
