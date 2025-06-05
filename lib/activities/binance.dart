@@ -168,7 +168,7 @@ class _BinancePageState extends State<BinancePage> {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Image.asset(
-          'assets/logos/binancelogo.webp', // Assure-toi que ce fichier est bien dans assets et déclaré dans pubspec.yaml
+          'assets/logos/binancelogo.png', // Assure-toi que ce fichier est bien dans assets et déclaré dans pubspec.yaml
           height: 50,
         ),
         SizedBox(height: 12),
