@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -75,8 +76,8 @@ class _StepperDemoState extends State<StepperDemo> {
         missingFields.add('Nombre de places');
       }
 
-      if (stepProvider.priceRange == null) {
-        missingFields.add('Gamme de prix');
+      if (stepProvider.ageRange == null) {
+        missingFields.add('Tranche d\'age');
       }
 
       if (stepProvider.location == null) {
@@ -161,9 +162,9 @@ class CustomStepper extends StatelessWidget {
             children: [
               // Première étape avec formulaire
               IntrinsicHeight(child: InformationsDeBaseForm()),
-              IntrinsicHeight(child: PrixCotisationForm()),
-              IntrinsicHeight(child: CoursesPhotos()),
-              //ImageStep(),
+              PrixCotisationForm(),
+              CoursesPhotos(),
+
               // Autres étapes
               ...steps.skip(1).map((step) {
                 return Center(child: Text('Content for $step'));
@@ -203,7 +204,7 @@ class _InformationsDeBaseFormState extends State<InformationsDeBaseForm> {
   final _courseNameController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _placeNumberController = TextEditingController();
-  RangeValues _ageRange = const RangeValues(0, 0);
+  RangeValues _ageRange = const RangeValues(0, 30);
   String? _ageRangeError;
 
   String _locationText = 'Aucune localisation sélectionnée';
@@ -389,9 +390,9 @@ class _InformationsDeBaseFormState extends State<InformationsDeBaseForm> {
             // ),
             RangeSlider(
               values: _ageRange,
-              min: 3,
+              min: 0,
               max: 30,
-              divisions: 27,
+              divisions: 30,
               labels:
                   _isSliderInitialState
                       ? RangeLabels('', '')
@@ -489,7 +490,8 @@ class _InformationsDeBaseFormState extends State<InformationsDeBaseForm> {
                                       );
                                     } else if (snapshot.hasError) {
                                       return Text(
-                                        'Erreur: ${snapshot.error}',
+                                        '--------',
+                                        //   'Erreur: ${snapshot.error}',
                                         overflow: TextOverflow.ellipsis,
                                       );
                                     } else {
@@ -516,7 +518,7 @@ class _InformationsDeBaseFormState extends State<InformationsDeBaseForm> {
     _courseNameController.dispose();
     _descriptionController.dispose();
     _placeNumberController.dispose();
-    _ageRangeError!.isEmpty;
+    //_ageRangeError!.isEmpty;
     notifier.value == null;
     super.dispose();
   }
@@ -594,7 +596,7 @@ class _PrixCotisationFormState extends State<PrixCotisationForm> {
                     labelText: 'Prix (DZD)',
                     hintText: 'Entrez le prix',
                     //    border: OutlineInputBorder(),
-                    suffixText: '€',
+                    suffixText: 'DZD',
                   ),
                 ),
                 SizedBox(height: 16),
@@ -786,9 +788,174 @@ class CoursesPhotos extends StatefulWidget {
 }
 
 class _CoursesPhotosState extends State<CoursesPhotos> {
+  List<String> _photos = [];
+  bool _showAllPhotos = false;
+  bool _expanded = false;
+
+  List<Widget> _buildPhotoWidgets() {
+    List<Widget> photoWidgets = [];
+
+    int displayCount =
+        _expanded ? _photos.length : (_photos.length > 4 ? 4 : _photos.length);
+
+    for (int index = 0; index < displayCount; index++) {
+      if (index == 3 && !_expanded && _photos.length > 4) {
+        photoWidgets.add(
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                _expanded = true;
+              });
+            },
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                SizedBox(
+                  width: (MediaQuery.of(context).size.width - 32) / 3,
+                  height: 100,
+                  child: Image.file(File(_photos[index]), fit: BoxFit.cover),
+                ),
+                CircleAvatar(
+                  backgroundColor: Colors.black54,
+                  child: Text(
+                    '+${_photos.length - 4}',
+                    style: TextStyle(color: Colors.white70, fontSize: 20),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      } else if (index == _photos.length - 1 && _expanded) {
+        photoWidgets.add(
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                _expanded = false;
+              });
+            },
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                SizedBox(
+                  width: (MediaQuery.of(context).size.width - 32) / 3,
+                  height: 100,
+                  child: Image.file(File(_photos[index]), fit: BoxFit.cover),
+                ),
+                CircleAvatar(
+                  backgroundColor: Colors.black54,
+                  child: Icon(Icons.remove, size: 30, color: Colors.white70),
+                ),
+              ],
+            ),
+          ),
+        );
+      } else {
+        photoWidgets.add(
+          Stack(
+            children: [
+              SizedBox(
+                width: (MediaQuery.of(context).size.width - 32) / 3,
+                height: 100,
+                child: Image.file(File(_photos[index]), fit: BoxFit.cover),
+              ),
+              Positioned(
+                right: 0,
+                child: IconButton(
+                  icon: Icon(Icons.delete, color: Colors.red),
+                  onPressed: () {
+                    setState(() {
+                      _photos.removeAt(index);
+                    });
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+    }
+
+    return photoWidgets;
+  }
+
+  Future<void> _pickImages() async {
+    final picker = ImagePicker();
+    final pickedFiles = await picker.pickMultiImage();
+
+    if (pickedFiles != null) {
+      for (var pickedFile in pickedFiles) {
+        _photos.add(pickedFile.path);
+      }
+    }
+  }
+
+  Future<void> _takePhoto() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.camera);
+
+    if (pickedFile != null) {
+      _photos.add(pickedFile.path);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold();
+    return ListView(
+      children: [
+        SizedBox(height: 20),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Card(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(
+                  10.0,
+                ), // Optionnel : pour des coins arrondis
+              ),
+              elevation: 4, // Optionnel : pour une ombre
+              child: Container(
+                width: 100, // Définissez la largeur du Card
+                height: 100, // Définissez la hauteur du Card
+                child: Center(
+                  child: IconButton(
+                    icon: Icon(Icons.image, color: Colors.black54, size: 50),
+                    onPressed: _pickImages,
+                  ),
+                ),
+              ),
+            ),
+            SizedBox(width: 20),
+            Card(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(
+                  10.0,
+                ), // Optionnel : pour des coins arrondis
+              ),
+              elevation: 4, // Optionnel : pour une ombre
+              child: Container(
+                width: 100, // Définissez la largeur du Card
+                height: 100, // Définissez la hauteur du Card
+                child: Center(
+                  child: IconButton(
+                    icon: Icon(Icons.camera_alt, color: Colors.black54),
+                    onPressed: _takePhoto,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: 20),
+        Center(
+          child: Wrap(
+            spacing: 8.0,
+            runSpacing: 8.0,
+            children: _buildPhotoWidgets(),
+          ),
+        ),
+      ],
+    );
   }
 }
 
@@ -851,196 +1018,6 @@ class StepProgressHeader extends StatelessWidget {
         ),
       ],
     );
-  }
-}
-
-class ImageStep extends StatefulWidget {
-  final List<String> photos;
-  final Function(String) onImageAdded;
-
-  ImageStep({required this.photos, required this.onImageAdded});
-
-  @override
-  _ImageStepState createState() => _ImageStepState();
-}
-
-class _ImageStepState extends State<ImageStep> {
-  bool _expanded = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView(
-      shrinkWrap: true,
-      children: [
-        SizedBox(height: 20),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Card(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(
-                  10.0,
-                ), // Optionnel : pour des coins arrondis
-              ),
-              elevation: 4, // Optionnel : pour une ombre
-              child: Container(
-                width: 100, // Définissez la largeur du Card
-                height: 100, // Définissez la hauteur du Card
-                child: Center(
-                  child: IconButton(
-                    icon: Icon(Icons.image, color: Colors.black54, size: 50),
-                    onPressed: _pickImages,
-                  ),
-                ),
-              ),
-            ),
-            SizedBox(width: 20),
-            Card(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(
-                  10.0,
-                ), // Optionnel : pour des coins arrondis
-              ),
-              elevation: 4, // Optionnel : pour une ombre
-              child: Container(
-                width: 100, // Définissez la largeur du Card
-                height: 100, // Définissez la hauteur du Card
-                child: Center(
-                  child: IconButton(
-                    icon: Icon(Icons.camera_alt, color: Colors.black54),
-                    onPressed: _takePhoto,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-        SizedBox(height: 20),
-        Center(
-          child: Wrap(
-            spacing: 8.0,
-            runSpacing: 8.0,
-            children: _buildPhotoWidgets(),
-          ),
-        ),
-      ],
-    );
-  }
-
-  List<Widget> _buildPhotoWidgets() {
-    List<Widget> photoWidgets = [];
-
-    int displayCount =
-        _expanded
-            ? widget.photos.length
-            : (widget.photos.length > 4 ? 4 : widget.photos.length);
-
-    for (int index = 0; index < displayCount; index++) {
-      if (index == 3 && !_expanded && widget.photos.length > 4) {
-        photoWidgets.add(
-          GestureDetector(
-            onTap: () {
-              setState(() {
-                _expanded = true;
-              });
-            },
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                SizedBox(
-                  width: (MediaQuery.of(context).size.width - 32) / 3,
-                  height: 100,
-                  child: Image.file(
-                    File(widget.photos[index]),
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                CircleAvatar(
-                  backgroundColor: Colors.black54,
-                  child: Text(
-                    '+${widget.photos.length - 4}',
-                    style: TextStyle(color: Colors.white70, fontSize: 20),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      } else if (index == widget.photos.length - 1 && _expanded) {
-        photoWidgets.add(
-          GestureDetector(
-            onTap: () {
-              setState(() {
-                _expanded = false;
-              });
-            },
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                SizedBox(
-                  width: (MediaQuery.of(context).size.width - 32) / 3,
-                  height: 100,
-                  child: Image.file(
-                    File(widget.photos[index]),
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                CircleAvatar(
-                  backgroundColor: Colors.black54,
-                  child: Icon(Icons.remove, size: 30, color: Colors.white70),
-                ),
-              ],
-            ),
-          ),
-        );
-      } else {
-        photoWidgets.add(
-          Stack(
-            children: [
-              SizedBox(
-                width: (MediaQuery.of(context).size.width - 32) / 3,
-                height: 100,
-                child: Image.file(
-                  File(widget.photos[index]),
-                  fit: BoxFit.cover,
-                ),
-              ),
-              Positioned(
-                right: 0,
-                child: IconButton(
-                  icon: Icon(Icons.delete, color: Colors.red),
-                  onPressed: () {
-                    setState(() {
-                      widget.photos.removeAt(index);
-                    });
-                  },
-                ),
-              ),
-            ],
-          ),
-        );
-      }
-    }
-
-    return photoWidgets;
-  }
-
-  Future<void> _pickImages() async {
-    final picker = ImagePicker();
-    final pickedFiles = await picker.pickMultiImage();
-
-    for (var pickedFile in pickedFiles) {
-      widget.onImageAdded(pickedFile.path);
-    }
-  }
-
-  Future<void> _takePhoto() async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.camera);
-
-    if (pickedFile != null) {
-      widget.onImageAdded(pickedFile.path);
-    }
   }
 }
 

@@ -429,7 +429,7 @@ class StepProvider1 extends ChangeNotifier {
   String? get nom => _nom;
   String? get description => _description;
   int? get nombrePlaces => _nombrePlaces;
-  RangeValues? get priceRange => _ageRange;
+  RangeValues? get ageRange => _ageRange;
   osm.GeoPoint? get location => _location;
   Map<String, double>? get prices => _prices;
 
@@ -466,8 +466,9 @@ class StepProvider1 extends ChangeNotifier {
     notifyListeners();
   }
 
-  void updateAgeRange(RangeValues priceRange) {
-    _ageRange = priceRange;
+  void updateAgeRange(RangeValues ageRange) {
+    _ageRange = ageRange;
+
     notifyListeners();
   }
 

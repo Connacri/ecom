@@ -4,6 +4,7 @@ import 'package:ecom/activities/generated/profile3.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_osm_plugin/flutter_osm_plugin.dart' as osm;
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:intl/intl.dart';
 import 'package:open_location_picker/open_location_picker.dart';
@@ -19,6 +20,7 @@ import '../ParentsScreen.dart';
 import '../aGeo/map/LocationAppExample.dart';
 import '../add/addCourseProgress.dart';
 import '../add/addCoursesNew.dart';
+import '../binance.dart';
 import '../edition/EditClubScreen.dart';
 import '../generated/multiphoto/PhotoUploadPage.dart';
 import '../generated/profile1.dart';
@@ -644,6 +646,16 @@ class _ClubHomePageState extends State<_ClubHomePage> {
                     );
                   },
                   icon: Icon(Icons.add_circle_outline_rounded),
+                ),
+                SizedBox(height: 20),
+                IconButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => BinancePage()),
+                    );
+                  },
+                  icon: Icon(FontAwesomeIcons.dollarSign),
                 ),
                 SizedBox(height: 20),
                 ElevatedButton.icon(
