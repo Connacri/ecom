@@ -655,7 +655,7 @@ class _ClubHomePageState extends State<_ClubHomePage> {
                       MaterialPageRoute(builder: (context) => BinancePage()),
                     );
                   },
-                  icon: Icon(FontAwesomeIcons.dollarSign),
+                  icon: Icon(FontAwesomeIcons.dollar),
                 ),
                 SizedBox(height: 20),
                 ElevatedButton.icon(

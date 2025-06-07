@@ -10,7 +10,6 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
-import 'activities/add/addCoursesNew.dart';
 import 'activities/generated/multiphoto/photo_provider.dart';
 import 'activities/providers.dart';
 import 'ads_provider.dart';
@@ -32,7 +31,6 @@ Future<void> main() async {
 
   // Initialize Firebase
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-
   // Initialize date formatting and timeago localization
   await initializeDateFormatting('fr_FR', null);
   timeago.setLocaleMessages('fr', timeago.FrMessages());
