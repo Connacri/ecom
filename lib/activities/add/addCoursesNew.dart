@@ -1,16 +1,22 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data' show Uint8List;
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:flutter_osm_plugin/flutter_osm_plugin.dart' as osm;
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
+import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../pages/MyApp.dart';
 import '../aGeo/map/LocationAppExample.dart';
 import '../modèles.dart';
 import '../providers.dart';
@@ -35,7 +41,21 @@ class _StepperDemoState extends State<StepperDemo> {
   Widget build(BuildContext context) {
     return Scaffold(
       resizeToAvoidBottomInset: true,
-      appBar: AppBar(title: Text('Stepper Demo')),
+      appBar: AppBar(
+        title: Text('Stepper Demo'),
+        actions: [
+          IconButton(
+            onPressed: () {
+              _fillTestData(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => StepperDemo()),
+              );
+            },
+            icon: Icon(Icons.account_tree_outlined),
+          ),
+        ],
+      ),
       body: Column(
         children: [
           StepProgressHeader(steps: steps),
@@ -233,11 +253,14 @@ class _CustomStepperState extends State<CustomStepper> {
               PrixCotisationForm(),
               CoursesPhotos(),
               // Contenu de l'étape 2 : Professeurs / Coachs
-              profs(),
+              Profs(),
+              Horraires(),
+              Saisons(),
+              FinalView(),
               // Autres étapes
-              ...widget.steps.skip(1).map((step) {
-                return Center(child: Text('Content for $step'));
-              }).toList(),
+              // ...widget.steps.skip(1).map((step) {
+              //   return Center(child: Text('Content for $step'));
+              // }).toList(),
             ],
           ),
         ),
@@ -1119,14 +1142,14 @@ class _CoursesPhotosState extends State<CoursesPhotos> {
   }
 }
 
-class profs extends StatefulWidget {
-  const profs({super.key});
+class Profs extends StatefulWidget {
+  const Profs({super.key});
 
   @override
-  State<profs> createState() => _profsState();
+  State<Profs> createState() => _ProfsState();
 }
 
-class _profsState extends State<profs> {
+class _ProfsState extends State<Profs> {
   final _profSearchController = TextEditingController();
   final _newProfNameController = TextEditingController();
   final _newProfEmailController = TextEditingController();
@@ -1693,6 +1716,331 @@ class _profsState extends State<profs> {
   }
 }
 
+class Horraires extends StatefulWidget {
+  const Horraires({super.key});
+
+  @override
+  State<Horraires> createState() => _HorrairesState();
+}
+
+class _HorrairesState extends State<Horraires> {
+  List<Schedule> _schedules = [];
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      children: [
+        ElevatedButton(
+          onPressed: _addSchedule,
+
+          child: Text('Ajouter un horaire'),
+          style: ElevatedButton.styleFrom(
+            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          ),
+        ),
+        SizedBox(height: 20),
+        Consumer<CourseProvider>(
+          builder: (context, provider, child) {
+            if (provider.schedules.isNotEmpty) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(height: 16),
+                  Text(
+                    'Horaires ajoutés:',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                  SizedBox(height: 8),
+                  ...provider.schedules.map((schedule) {
+                    return Card(
+                      margin: EdgeInsets.symmetric(vertical: 4),
+                      child: ListTile(
+                        onLongPress: () => provider.removeSchedule(schedule),
+                        leading: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              '${DateFormat.Hm().format(schedule.startTime)}',
+                            ),
+                            Text('${DateFormat.Hm().format(schedule.endTime)}'),
+                          ],
+                        ),
+                        title: Text(
+                          schedule.days.join(", "),
+                          style: TextStyle(fontWeight: FontWeight.w500),
+                        ),
+                        // subtitle: Text(
+                        //   '${DateFormat.Hm().format(schedule.startTime)} - ${DateFormat.Hm().format(schedule.endTime)}',
+                        // ),
+                        trailing: IconButton(
+                          icon: Icon(Icons.delete, color: Colors.red),
+                          onPressed: () => provider.removeSchedule(schedule),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                  SizedBox(height: 20),
+                ],
+              );
+            } else {
+              return SizedBox.shrink();
+            }
+          },
+        ),
+      ],
+    );
+  }
+
+  void _addSchedule() {
+    TimeOfDay? startTime;
+    TimeOfDay? endTime;
+    final startTimeController = TextEditingController();
+    final endTimeController = TextEditingController();
+    final selectedDays = <String>{};
+    final availableDays = [
+      'Lundi',
+      'Mardi',
+      'Mercredi',
+      'Jeudi',
+      'Vendredi',
+      'Samedi',
+      'Dimanche',
+    ];
+
+    showDialog(
+      context: context,
+      builder:
+          (context) => StatefulBuilder(
+            builder:
+                (context, setState) => AlertDialog(
+                  title: FittedBox(child: Text('Ajouter les Jours & horaire')),
+                  content: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Jours:',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        SizedBox(height: 8),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children:
+                              availableDays.map((day) {
+                                return SizedBox(
+                                  width: 100, // largeur fixe
+                                  height: 40,
+                                  child: FilterChip(
+                                    label: Text(day),
+                                    selected: selectedDays.contains(day),
+                                    onSelected:
+                                        (selected) => setState(() {
+                                          selected
+                                              ? selectedDays.add(day)
+                                              : selectedDays.remove(day);
+                                        }),
+                                  ),
+                                );
+                              }).toList(),
+                        ),
+                        SizedBox(height: 16),
+                        TextFormField(
+                          controller: startTimeController,
+                          decoration: InputDecoration(
+                            labelText: 'Heure de début',
+                            suffixIcon: Icon(Icons.access_time),
+                          ),
+                          readOnly: true,
+                          onTap: () async {
+                            final time = await showTimePicker(
+                              context: context,
+                              initialTime: TimeOfDay.now(),
+                            );
+                            if (time != null) {
+                              setState(() {
+                                startTime = time;
+                                startTimeController.text =
+                                    '${time.hour}:${time.minute.toString().padLeft(2, '0')}';
+                              });
+                            }
+                          },
+                        ),
+                        SizedBox(height: 16),
+                        TextFormField(
+                          controller: endTimeController,
+                          decoration: InputDecoration(
+                            labelText: 'Heure de fin',
+                            suffixIcon: Icon(Icons.access_time),
+                          ),
+                          readOnly: true,
+                          onTap: () async {
+                            final initialTime =
+                                startTime != null
+                                    ? TimeOfDay(
+                                      hour: startTime!.hour + 1,
+                                      minute: startTime!.minute,
+                                    )
+                                    : TimeOfDay.now();
+                            final time = await showTimePicker(
+                              context: context,
+                              initialTime: initialTime,
+                            );
+                            if (time != null) {
+                              setState(() {
+                                endTime = time;
+                                endTimeController.text =
+                                    '${time.hour}:${time.minute.toString().padLeft(2, '0')}';
+                              });
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: Text('Annuler'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        if (selectedDays.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Sélectionnez au moins un jour'),
+                            ),
+                          );
+                          return;
+                        }
+                        if (startTime == null || endTime == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Sélectionnez les heures')),
+                          );
+                          return;
+                        }
+
+                        final newSchedule = Schedule(
+                          id: Uuid().v4(),
+                          startTime: DateTime(
+                            DateTime.now().year,
+                            DateTime.now().month,
+                            DateTime.now().day,
+                            startTime!.hour,
+                            startTime!.minute,
+                          ),
+                          endTime: DateTime(
+                            DateTime.now().year,
+                            DateTime.now().month,
+                            DateTime.now().day,
+                            endTime!.hour,
+                            endTime!.minute,
+                          ),
+                          days: selectedDays.toList(),
+                          createdAt: DateTime.now(),
+                        );
+
+                        Provider.of<CourseProvider>(
+                          context,
+                          listen: false,
+                        ).addSchedule(newSchedule);
+                        // Assurez-vous que l'état est mis à jour
+                        setState(() {
+                          _schedules =
+                              Provider.of<CourseProvider>(
+                                context,
+                                listen: false,
+                              ).schedules;
+                        });
+
+                        Navigator.pop(context);
+                      },
+                      child: Text('Ajouter'),
+                    ),
+                  ],
+                ),
+          ),
+    );
+  }
+}
+
+class Saisons extends StatefulWidget {
+  const Saisons({super.key});
+
+  @override
+  State<Saisons> createState() => _SaisonsState();
+}
+
+class _SaisonsState extends State<Saisons> {
+  final debutController = TextEditingController();
+  final finController = TextEditingController();
+  final saisonFormKey = GlobalKey<FormState>();
+
+  DateTime? get dateDebut {
+    try {
+      return DateFormat('dd/MM/yyyy').parseStrict(debutController.text);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  DateTime? get dateFin {
+    try {
+      return DateFormat('dd/MM/yyyy').parseStrict(finController.text);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> _selectDate(BuildContext context, bool isDebut) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2100),
+    );
+
+    if (picked != null) {
+      final formatted = DateFormat('dd/MM/yyyy').format(picked);
+      if (isDebut) {
+        debutController.text = formatted;
+      } else {
+        finController.text = formatted;
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Form(
+      key: saisonFormKey,
+      child: Column(
+        children: [
+          TextFormField(
+            controller: debutController,
+            readOnly: true,
+            onTap: () => _selectDate(context, true),
+            decoration: InputDecoration(labelText: 'Date début'),
+            // validator:
+            //     (value) =>
+            //         value == null || value.isEmpty ? 'Obligatoire' : null,
+          ),
+          SizedBox(height: 16),
+          TextFormField(
+            controller: finController,
+            readOnly: true,
+            onTap: () => _selectDate(context, false),
+            decoration: InputDecoration(labelText: 'Date fin'),
+            // validator:
+            //     (value) =>
+            //         value == null || value.isEmpty ? 'Obligatoire' : null,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class StepProgressHeader extends StatelessWidget {
   final List<String> steps;
 
@@ -1755,6 +2103,588 @@ class StepProgressHeader extends StatelessWidget {
   }
 }
 
+class FinalView extends StatefulWidget {
+  const FinalView({super.key});
+
+  @override
+  State<FinalView> createState() => _FinalViewState();
+}
+
+class _FinalViewState extends State<FinalView> {
+  @override
+  Widget build(BuildContext context) {
+    final stepProvider = Provider.of<StepProvider1>(context);
+    final user = Provider.of<UserProvider>(context).user;
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        Text('Nom du cours: ${stepProvider.nom ?? "Non spécifié"}'),
+        const SizedBox(height: 8),
+        Text('Description: ${stepProvider.description ?? "Non spécifiée"}'),
+        const SizedBox(height: 8),
+        Text(
+          'Nombre de places: ${stepProvider.nombrePlaces?.toString() ?? "Non spécifié"}',
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Tranche d\'âge: ${stepProvider.ageRange != null ? "${stepProvider.ageRange!.start.round()} - ${stepProvider.ageRange!.end.round()} ans" : "Non spécifiée"}',
+        ),
+        const SizedBox(height: 20),
+        const Text(
+          'Photos des cours:',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 8),
+        if (stepProvider.photos != null && stepProvider.photos!.isNotEmpty)
+          Wrap(
+            spacing: 8,
+            children:
+                stepProvider.photos!.map((photo) {
+                  return Image.file(
+                    File(photo),
+                    width: 100,
+                    height: 100,
+                    fit: BoxFit.cover,
+                  );
+                }).toList(),
+          )
+        else
+          const Text("Aucune photo disponible"),
+        const SizedBox(height: 20),
+        const Text(
+          'Professeurs:',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 8),
+        if (stepProvider.profs != null && stepProvider.profs!.isNotEmpty)
+          Wrap(
+            spacing: 8,
+            children:
+                stepProvider.profs!.map((prof) {
+                  return Chip(label: Text(prof.name));
+                }).toList(),
+          )
+        else
+          const Text("Aucun professeur sélectionné"),
+        const SizedBox(height: 20),
+        if (stepProvider.location != null)
+          Text(
+            'Localisation: Lat: ${stepProvider.location!.latitude.toStringAsFixed(4)}, Lng: ${stepProvider.location!.longitude.toStringAsFixed(4)}',
+          )
+        else
+          const Text("Aucune localisation sélectionnée"),
+        const SizedBox(height: 20),
+        if (stepProvider.prices != null && stepProvider.prices!.isNotEmpty)
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Prix:',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              ...stepProvider.prices!.entries.map((entry) {
+                return Text('${entry.key}: ${entry.value}');
+              }).toList(),
+            ],
+          )
+        else
+          const Text("Aucun prix spécifié"),
+        const SizedBox(height: 20),
+        ElevatedButton(
+          onPressed: () => _saveCourse(user),
+          child: const Text('Soumettre'),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _saveCourse(user) async {
+    final stepProvider = Provider.of<StepProvider1>(context, listen: false);
+    final courseProvider = Provider.of<CourseProvider>(context, listen: false);
+
+    List<String> photoUrls = [];
+    ValueNotifier<int> current = ValueNotifier<int>(0);
+    int total = stepProvider.photos?.length ?? 0;
+
+    _showStylishProgressDialog(context, current, total);
+
+    try {
+      final futures =
+          stepProvider.photos?.map((photo) async {
+            if (!photo.startsWith('http')) {
+              final compressed = await _compressImageToWebP(photo);
+
+              final ref = FirebaseStorage.instance.ref().child(
+                'course_photos/${DateTime.now().millisecondsSinceEpoch}.webp',
+              );
+
+              if (compressed != null) {
+                await ref.putData(
+                  compressed,
+                  SettableMetadata(contentType: 'image/webp'),
+                );
+              } else {
+                await ref.putFile(File(photo));
+              }
+
+              final url = await ref.getDownloadURL();
+              current.value++;
+              return url;
+            } else {
+              current.value++;
+              return photo;
+            }
+          }).toList() ??
+          [];
+
+      photoUrls = await Future.wait(futures);
+
+      final docRef =
+          firestore.FirebaseFirestore.instance.collection('courses').doc();
+
+      final course = Course(
+        id: docRef.id,
+        name: stepProvider.nom ?? '',
+        clubId: user!.id, // Assurez-vous d'avoir l'ID de l'utilisateur
+        description: stepProvider.description ?? '',
+        schedules: courseProvider.schedules,
+        ageRange:
+            stepProvider.ageRange != null
+                ? '${stepProvider.ageRange!.start.round()}-${stepProvider.ageRange!.end.round()}'
+                : '0-0',
+        profIds: stepProvider.profs?.map((user) => user.id).toList() ?? [],
+        photos: photoUrls,
+        placeNumber: stepProvider.nombrePlaces ?? 0,
+        createdAt: DateTime.now(),
+        saisonStart: DateTime.now(), // Assurez-vous d'avoir la date de début
+        saisonEnd: DateTime.now(), // Assurez-vous d'avoir la date de fin
+        location:
+            stepProvider.location != null
+                ? firestore.GeoPoint(
+                  stepProvider.location!.latitude,
+                  stepProvider.location!.longitude,
+                )
+                : firestore.GeoPoint(0, 0),
+      );
+
+      await docRef.set(course.toMap(), firestore.SetOptions(merge: true));
+
+      await firestore.FirebaseFirestore.instance
+          .collection('userModel')
+          .doc('user_id') // Assurez-vous d'avoir l'ID de l'utilisateur
+          .set({
+            'courses': firestore.FieldValue.arrayUnion([course.id]),
+          }, firestore.SetOptions(merge: true));
+
+      Navigator.of(context).pop(); // Ferme le dialog de progression
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Cours sauvegardé avec succès!')),
+      );
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const MyApp1()),
+      );
+    } catch (e) {
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Erreur: ${e.toString()}')));
+      print(e);
+    }
+  }
+
+  Future<Uint8List?> _compressImageToWebP(String imagePath) async {
+    try {
+      return await FlutterImageCompress.compressWithFile(
+        imagePath,
+        format: CompressFormat.webp,
+        quality: 75,
+        minWidth: 800,
+        minHeight: 600,
+        keepExif: false,
+      );
+    } catch (e) {
+      print('Erreur compression : $e');
+      return null;
+    }
+  }
+
+  void _showStylishProgressDialog(
+    BuildContext context,
+    ValueNotifier<int> current,
+    int total,
+  ) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder:
+          (_) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            content: ValueListenableBuilder<int>(
+              valueListenable: current,
+              builder: (context, value, _) {
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(
+                      height: 100,
+                      width: 100,
+                      child: Lottie.asset(
+                        'assets/lotties/1 (71).json',
+                        repeat: true,
+                      ), // ajoute un fichier lottie ici
+                    ),
+                    SizedBox(height: 12),
+                    Text(
+                      "Chargement des images...",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                    LinearProgressIndicator(
+                      value: total > 0 ? value / total : null,
+                      color: Colors.teal,
+                    ),
+                    SizedBox(height: 8),
+                    Text('$value / $total'),
+                  ],
+                );
+              },
+            ),
+          ),
+    );
+  }
+}
+
+// class FinalView1 extends StatefulWidget {
+//   const FinalView1({super.key});
+//
+//   @override
+//   State<FinalView1> createState() => _FinalView1State();
+// }
+//
+// class _FinalView1State extends State<FinalView1> {
+//   @override
+//   Widget build(BuildContext context) {
+//     return ListView(
+//       //crossAxisAlignment: CrossAxisAlignment.start,
+//       children: [
+//         Text('Nom du cours: ${_courseNameController.text}'),
+//         Text('Description: ${_descriptionController.text}'),
+//         Text('Nombre de Place: ${_placeNumberController.text}'),
+//         Text(
+//           'Tranche d\'âge: ${_ageRange.start.round()} - ${_ageRange.end.round()} ans',
+//         ),
+//         SizedBox(height: 20),
+//         Text(
+//           'Photos des cours:',
+//           style: TextStyle(fontWeight: FontWeight.bold),
+//         ),
+//         Wrap(
+//           spacing: 8,
+//           children:
+//               _photos.map((photo) {
+//                 return Image.file(
+//                   File(photo),
+//                   width: 100,
+//                   height: 100,
+//                   fit: BoxFit.cover,
+//                 );
+//               }).toList(),
+//         ),
+//         SizedBox(height: 20),
+//         Text('Professeurs:', style: TextStyle(fontWeight: FontWeight.bold)),
+//         Wrap(
+//           spacing: 8,
+//           children:
+//               _selectedProfs.map((prof) {
+//                 return Chip(
+//                   label: Text(prof.name),
+//                   deleteIcon: Icon(Icons.close, size: 18),
+//                   onDeleted: () => _toggleProfSelection(prof),
+//                 );
+//               }).toList(),
+//         ),
+//         SizedBox(height: 20),
+//         Card(
+//           shape: RoundedRectangleBorder(
+//             borderRadius: BorderRadius.circular(15.0),
+//             side: BorderSide(
+//               color: Colors.blueAccent,
+//               width: 2.0,
+//             ), // Bordure colorée
+//           ),
+//           elevation: 8, // Ombre plus prononcée
+//           margin: EdgeInsets.symmetric(vertical: 8.0), // Marge extérieure
+//           child: Padding(
+//             padding: const EdgeInsets.all(16.0),
+//             child: Column(
+//               crossAxisAlignment: CrossAxisAlignment.start,
+//               children: [
+//                 Text(
+//                   'Saison:',
+//                   style: TextStyle(
+//                     fontWeight: FontWeight.bold,
+//                     fontSize: 18,
+//                     color: Colors.blueAccent, // Couleur du texte
+//                   ),
+//                 ),
+//                 Divider(
+//                   color: Colors.blueAccent,
+//                   thickness: 1.5,
+//                 ), // Ligne de séparation
+//                 SizedBox(height: 12),
+//                 Row(
+//                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+//                   children: [
+//                     Column(
+//                       crossAxisAlignment: CrossAxisAlignment.start,
+//                       children: [
+//                         Text(
+//                           'Début',
+//                           style: TextStyle(
+//                             fontWeight: FontWeight.bold,
+//                             color: Colors.grey[700],
+//                           ),
+//                         ),
+//                         SizedBox(height: 4),
+//                         Text(
+//                           dateDebut != null
+//                               ? DateFormat('dd/MM/yyyy').format(dateDebut!)
+//                               : '??',
+//                           style: TextStyle(
+//                             fontWeight: FontWeight.bold,
+//                             fontSize: 16,
+//                             color: Colors.black87,
+//                           ),
+//                         ),
+//                       ],
+//                     ),
+//                     Column(
+//                       crossAxisAlignment: CrossAxisAlignment.end,
+//                       children: [
+//                         Text(
+//                           'Fin',
+//                           style: TextStyle(
+//                             fontWeight: FontWeight.bold,
+//                             color: Colors.grey[700],
+//                           ),
+//                         ),
+//                         SizedBox(height: 4),
+//                         Text(
+//                           dateFin != null
+//                               ? DateFormat('dd/MM/yyyy').format(dateFin!)
+//                               : '??',
+//                           style: TextStyle(
+//                             fontWeight: FontWeight.bold,
+//                             fontSize: 16,
+//                             color: Colors.black87,
+//                           ),
+//                         ),
+//                       ],
+//                     ),
+//                   ],
+//                 ),
+//               ],
+//             ),
+//           ),
+//         ),
+//
+//         // Dans l'étape Aperçu
+//         // Ajoutez l'affichage de la localisation dans l'aperçu
+//         SizedBox(height: 20),
+//         // Affichage des horaires
+//         SizedBox(height: 20),
+//         Text('Horaires:', style: TextStyle(fontWeight: FontWeight.bold)),
+//         Consumer<CourseProvider>(
+//           builder: (context, provider, child) {
+//             if (provider.schedules.isNotEmpty) {
+//               _schedules = provider.schedules;
+//               return Column(
+//                 crossAxisAlignment: CrossAxisAlignment.start,
+//                 children: [
+//                   SizedBox(height: 16),
+//                   Text(
+//                     'Horaires ajoutés:',
+//                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+//                   ),
+//                   SizedBox(height: 8),
+//                   ...provider.schedules.map((schedule) {
+//                     return Card(
+//                       margin: EdgeInsets.symmetric(vertical: 4),
+//                       child: ListTile(
+//                         title: Text(
+//                           schedule.days.join(", "),
+//                           style: TextStyle(fontWeight: FontWeight.w500),
+//                         ),
+//                         subtitle: Text(
+//                           '${DateFormat.Hm().format(schedule.startTime)} - ${DateFormat.Hm().format(schedule.endTime)}',
+//                         ),
+//                       ),
+//                     );
+//                   }).toList(),
+//                 ],
+//               );
+//             } else {
+//               return SizedBox.shrink();
+//             }
+//           },
+//         ),
+//         SizedBox(height: 20),
+//         ElevatedButton(
+//           onPressed: _saveCourse,
+//           child: Text('Submit to Storage'),
+//         ),
+//       ],
+//     );
+//   }
+//
+//   Future<void> _saveCourse() async {
+//     final courseProvider = Provider.of<CourseProvider>(context, listen: false);
+//     List<String> photoUrls = [];
+//     ValueNotifier<int> current = ValueNotifier<int>(0);
+//     int total = _photos.length;
+//
+//     _showStylishProgressDialog(context, current, total);
+//
+//     try {
+//       final futures =
+//           _photos.map((photo) async {
+//             if (!photo.startsWith('http')) {
+//               final compressed = await _compressImageToWebP(photo);
+//
+//               final ref = firebase_storage.FirebaseStorage.instance.ref().child(
+//                 'course_photos/${DateTime.now().millisecondsSinceEpoch}.webp',
+//               );
+//
+//               if (compressed != null) {
+//                 await ref.putData(
+//                   compressed,
+//                   firebase_storage.SettableMetadata(contentType: 'image/webp'),
+//                 );
+//               } else {
+//                 await ref.putFile(File(photo));
+//               }
+//
+//               final url = await ref.getDownloadURL();
+//               current.value++;
+//
+//               return url;
+//             } else {
+//               current.value++;
+//               return photo;
+//             }
+//           }).toList();
+//
+//       photoUrls = await Future.wait(futures);
+//
+//       final docRef =
+//           firestore.FirebaseFirestore.instance.collection('courses').doc();
+//
+//       final course = Course(
+//         id: docRef.id,
+//         name: _courseNameController.text,
+//         clubId: widget.user.id,
+//         description: _descriptionController.text,
+//         schedules: courseProvider.schedules,
+//         ageRange: '${_ageRange.start.round()}-${_ageRange.end.round()}',
+//         profIds: _selectedProfs.map((user) => user.id).toList(),
+//         photos: photoUrls,
+//         placeNumber: int.parse(_placeNumberController.text.trim()),
+//         createdAt: DateTime.now(),
+//         saisonStart: DateFormat('dd/MM/yyyy').parseStrict(debutController.text),
+//         saisonEnd: DateFormat('dd/MM/yyyy').parseStrict(finController.text),
+//         location: firestore.GeoPoint(
+//           notifier.value!.latitude,
+//           notifier.value!.longitude,
+//         ),
+//       );
+//       print(course);
+//       await docRef.set(course.toMap(), firestore.SetOptions(merge: true));
+//
+//       await firestore.FirebaseFirestore.instance
+//           .collection('userModel')
+//           .doc(widget.user.id)
+//           .set({
+//             'courses': firestore.FieldValue.arrayUnion([course.id]),
+//           }, firestore.SetOptions(merge: true));
+//
+//       Navigator.of(context).pop(); // Ferme le progress dialog
+//
+//       ScaffoldMessenger.of(
+//         context,
+//       ).showSnackBar(SnackBar(content: Text('Cours sauvegardé avec succès!')));
+//       Navigator.pushReplacement(
+//         context,
+//         MaterialPageRoute(builder: (_) => MyApp1()),
+//       );
+//     } catch (e) {
+//       Navigator.of(context).pop();
+//       ScaffoldMessenger.of(
+//         context,
+//       ).showSnackBar(SnackBar(content: Text('Erreur: ${e.toString()}')));
+//       print('*****************************************');
+//       print(e);
+//     }
+//   }
+//
+//   void _showStylishProgressDialog(
+//     BuildContext context,
+//     ValueNotifier<int> current,
+//     int total,
+//   ) {
+//     showDialog(
+//       context: context,
+//       barrierDismissible: false,
+//       builder:
+//           (_) => AlertDialog(
+//             shape: RoundedRectangleBorder(
+//               borderRadius: BorderRadius.circular(16),
+//             ),
+//             content: ValueListenableBuilder<int>(
+//               valueListenable: current,
+//               builder: (context, value, _) {
+//                 return Column(
+//                   mainAxisSize: MainAxisSize.min,
+//                   children: [
+//                     SizedBox(
+//                       height: 100,
+//                       width: 100,
+//                       child: Lottie.asset(
+//                         'assets/lotties/1 (71).json',
+//                         repeat: true,
+//                       ), // ajoute un fichier lottie ici
+//                     ),
+//                     SizedBox(height: 12),
+//                     Text(
+//                       "Chargement des images...",
+//                       style: TextStyle(
+//                         fontWeight: FontWeight.bold,
+//                         fontSize: 16,
+//                       ),
+//                     ),
+//                     SizedBox(height: 8),
+//                     LinearProgressIndicator(
+//                       value: total > 0 ? value / total : null,
+//                       color: Colors.teal,
+//                     ),
+//                     SizedBox(height: 8),
+//                     Text('$value / $total'),
+//                   ],
+//                 );
+//               },
+//             ),
+//           ),
+//     );
+//   }
+// }
+
 extension StringExtension on String {
   String capitalize() {
     return "${this[0].toUpperCase()}${this.substring(1)}";
@@ -1765,3 +2695,60 @@ extension StringExtension on String {
 // context,
 // listen: false,
 // ).updatePhotos(_photos);
+
+void _fillTestData(BuildContext context) {
+  final stepProvider = Provider.of<StepProvider1>(context, listen: false);
+  final courseProvider = Provider.of<CourseProvider>(context, listen: false);
+
+  // Remplir les informations de base
+  stepProvider.updateNom('Cours de Test');
+  stepProvider.updateDescription('Description du cours de test.');
+  stepProvider.updateNombrePlaces(30);
+  stepProvider.updateAgeRange(RangeValues(10, 20));
+  stepProvider.updateLocation(
+    osm.GeoPoint(latitude: 36.7538, longitude: 3.0588),
+  );
+
+  // Remplir les prix
+  stepProvider.updatePrices({
+    'annuel': 1000.0,
+    'mensuel': 100.0,
+    'seance': 10.0,
+  });
+
+  // Remplir les photos
+  stepProvider.updatePhotos(['path/to/photo1.jpg', 'path/to/photo2.jpg']);
+
+  // Remplir les professeurs
+  stepProvider.updateProfs([
+    UserModel(
+      id: '1',
+      name: 'Professeur 1',
+      email: 'prof1@test.com',
+      role: 'professeur',
+      createdAt: DateTime.now(),
+      lastLogin: DateTime.now(),
+      editedAt: DateTime.now(),
+    ),
+    UserModel(
+      id: '2',
+      name: 'Professeur 2',
+      email: 'prof2@test.com',
+      role: 'professeur',
+      createdAt: DateTime.now(),
+      lastLogin: DateTime.now(),
+      editedAt: DateTime.now(),
+    ),
+  ]);
+
+  // Remplir les horaires
+  courseProvider.addSchedule(
+    Schedule(
+      id: '1',
+      startTime: DateTime.now(),
+      endTime: DateTime.now().add(Duration(hours: 2)),
+      days: ['Lundi', 'Mercredi', 'Vendredi'],
+      createdAt: DateTime.now(),
+    ),
+  );
+}
