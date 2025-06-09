@@ -1,14 +1,18 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
 import 'package:flutter/material.dart';
 import 'package:flutter_osm_plugin/flutter_osm_plugin.dart' as osm;
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import 'package:uuid/uuid.dart';
 
 import '../aGeo/map/LocationAppExample.dart';
+import '../modèles.dart';
 import '../providers.dart';
 
 class StepperDemo extends StatefulWidget {
@@ -58,7 +62,6 @@ class _StepperDemoState extends State<StepperDemo> {
 
   void _validateAndContinue(BuildContext context) {
     final stepProvider = Provider.of<StepProvider1>(context, listen: false);
-
     if (stepProvider.currentStep == 0) {
       // Validation pour la première étape
       List<String> missingFields = [];
@@ -77,7 +80,7 @@ class _StepperDemoState extends State<StepperDemo> {
       }
 
       if (stepProvider.ageRange == null) {
-        missingFields.add('Tranche d\'age');
+        missingFields.add('Tranche d\'âge');
       }
 
       if (stepProvider.location == null) {
@@ -96,7 +99,67 @@ class _StepperDemoState extends State<StepperDemo> {
         ]);
         return;
       }
+    } else if (stepProvider.currentStep == 2) {
+      if (stepProvider.photos == null || stepProvider.photos!.isEmpty) {
+        _showValidationDialog(context, ['Au moins une photo']);
+        return;
+      }
+    } else if (stepProvider.currentStep == 3) {
+      if (stepProvider.profs == null || stepProvider.profs!.isEmpty) {
+        _showValidationDialog(context, [
+          'Au moins un professeurs / coach / ...',
+        ]);
+        return;
+      }
+    } else if (stepProvider.currentStep == 4) {
+      // Validation pour la cinquième étape
+      // Ajoutez votre logique de validation ici
+    } else if (stepProvider.currentStep == 5) {
+      // Validation pour la sixième étape
+      // Ajoutez votre logique de validation ici
+    } else if (stepProvider.currentStep == 6) {
+      // Validation pour la septième étape
+      // Ajoutez votre logique de validation ici
     }
+
+    // if (stepProvider.currentStep == 0) {
+    //   // Validation pour la première étape
+    //   List<String> missingFields = [];
+    //
+    //   if (stepProvider.nom == null || stepProvider.nom!.trim().isEmpty) {
+    //     missingFields.add('Nom');
+    //   }
+    //
+    //   if (stepProvider.description == null ||
+    //       stepProvider.description!.trim().isEmpty) {
+    //     missingFields.add('Description');
+    //   }
+    //
+    //   if (stepProvider.nombrePlaces == null) {
+    //     missingFields.add('Nombre de places');
+    //   }
+    //
+    //   if (stepProvider.ageRange == null) {
+    //     missingFields.add('Tranche d\'age');
+    //   }
+    //
+    //   if (stepProvider.location == null) {
+    //     missingFields.add('Localisation');
+    //   }
+    //
+    //   if (missingFields.isNotEmpty) {
+    //     _showValidationDialog(context, missingFields);
+    //     return;
+    //   }
+    // } else if (stepProvider.currentStep == 1) {
+    //   // Validation pour la deuxième étape
+    //   if (stepProvider.prices == null || stepProvider.prices!.isEmpty) {
+    //     _showValidationDialog(context, [
+    //       'Au moins un type de cotisation avec prix',
+    //     ]);
+    //     return;
+    //   }
+    // }
 
     // Si validation réussie ou autre étape
     stepProvider.nextStep();
@@ -139,7 +202,7 @@ class _StepperDemoState extends State<StepperDemo> {
   }
 }
 
-class CustomStepper extends StatelessWidget {
+class CustomStepper extends StatefulWidget {
   final List<String> steps;
   final int currentStep;
   final VoidCallback onStepContinue;
@@ -153,20 +216,26 @@ class CustomStepper extends StatelessWidget {
   });
 
   @override
+  State<CustomStepper> createState() => _CustomStepperState();
+}
+
+class _CustomStepperState extends State<CustomStepper> {
+  @override
   Widget build(BuildContext context) {
     return Column(
       children: [
         Expanded(
           child: IndexedStack(
-            index: currentStep,
+            index: widget.currentStep,
             children: [
               // Première étape avec formulaire
               IntrinsicHeight(child: InformationsDeBaseForm()),
               PrixCotisationForm(),
               CoursesPhotos(),
-
+              // Contenu de l'étape 2 : Professeurs / Coachs
+              profs(),
               // Autres étapes
-              ...steps.skip(1).map((step) {
+              ...widget.steps.skip(1).map((step) {
                 return Center(child: Text('Content for $step'));
               }).toList(),
             ],
@@ -178,12 +247,14 @@ class CustomStepper extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               TextButton(
-                onPressed: currentStep > 0 ? onStepCancel : null,
+                onPressed: widget.currentStep > 0 ? widget.onStepCancel : null,
                 child: Text('Précédent'),
               ),
               ElevatedButton(
                 onPressed:
-                    currentStep < steps.length - 1 ? onStepContinue : null,
+                    widget.currentStep < widget.steps.length - 1
+                        ? widget.onStepContinue
+                        : null,
                 child: Text('Suivant'),
               ),
             ],
@@ -791,7 +862,19 @@ class _CoursesPhotosState extends State<CoursesPhotos> {
   List<String> _photos = [];
   bool _showAllPhotos = false;
   bool _expanded = false;
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Mettre à jour l'état local avec les données actuelles du Provider
+    final stepProvider = Provider.of<StepProvider1>(context);
+    if (_photos != stepProvider.photos) {
+      setState(() {
+        _photos = List<String>.from(stepProvider.photos ?? []);
+      });
+    }
+  }
 
+  @override
   List<Widget> _buildPhotoWidgets() {
     List<Widget> photoWidgets = [];
 
@@ -867,6 +950,11 @@ class _CoursesPhotosState extends State<CoursesPhotos> {
                     setState(() {
                       _photos.removeAt(index);
                     });
+
+                    Provider.of<StepProvider1>(
+                      context,
+                      listen: false,
+                    ).updatePhotos(_photos);
                   },
                 ),
               ),
@@ -879,13 +967,57 @@ class _CoursesPhotosState extends State<CoursesPhotos> {
     return photoWidgets;
   }
 
+  Widget _buildPhotoGrid() {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: NeverScrollableScrollPhysics(),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        crossAxisSpacing: 8,
+        mainAxisSpacing: 8,
+      ),
+      itemCount: _photos.length,
+      itemBuilder: (context, index) {
+        return Stack(
+          children: [
+            Image.file(
+              File(_photos[index]),
+              fit: BoxFit.cover,
+              width: double.infinity,
+              height: double.infinity,
+            ),
+            Positioned(
+              top: 0,
+              right: 0,
+              child: IconButton(
+                icon: Icon(Icons.close, color: Colors.red),
+                onPressed:
+                    () => setState(() {
+                      _photos.removeAt(index);
+                    }),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Future<void> _pickImages() async {
     final picker = ImagePicker();
     final pickedFiles = await picker.pickMultiImage();
 
     if (pickedFiles != null) {
       for (var pickedFile in pickedFiles) {
-        _photos.add(pickedFile.path);
+        setState(() {
+          _photos.add(pickedFile.path);
+          // _photos.addAll(pickedFiles.map((file) => file.path).toList());
+        });
+        // Mettre à jour le provider
+        Provider.of<StepProvider1>(
+          context,
+          listen: false,
+        ).updatePhotos(_photos);
       }
     }
   }
@@ -895,67 +1027,669 @@ class _CoursesPhotosState extends State<CoursesPhotos> {
     final pickedFile = await picker.pickImage(source: ImageSource.camera);
 
     if (pickedFile != null) {
-      _photos.add(pickedFile.path);
+      setState(() {
+        _photos.add(pickedFile.path);
+      });
+      // Mettre à jour le provider
+      Provider.of<StepProvider1>(context, listen: false).updatePhotos(_photos);
     }
+  }
+
+  // Future<void> _pickImages() async {
+  //   final picker = ImagePicker();
+  //   final pickedFiles = await picker.pickMultiImage();
+  //
+  //   if (pickedFiles != null) {
+  //     for (var pickedFile in pickedFiles) {
+  //       _photos.add(pickedFile.path);
+  //     }
+  //   }
+  // }
+  //
+  // Future<void> _takePhoto() async {
+  //   final picker = ImagePicker();
+  //   final pickedFile = await picker.pickImage(source: ImageSource.camera);
+  //
+  //   if (pickedFile != null) {
+  //     _photos.add(pickedFile.path);
+  //   }
+  // }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(18.0),
+      child: ListView(
+        children: [
+          SizedBox(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(
+                    10.0,
+                  ), // Optionnel : pour des coins arrondis
+                ),
+                elevation: 4, // Optionnel : pour une ombre
+                child: Container(
+                  width: 100, // Définissez la largeur du Card
+                  height: 100, // Définissez la hauteur du Card
+                  child: Center(
+                    child: IconButton(
+                      icon: Icon(Icons.image, color: Colors.black54, size: 50),
+                      onPressed: _pickImages,
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(width: 20),
+              Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(
+                    10.0,
+                  ), // Optionnel : pour des coins arrondis
+                ),
+                elevation: 4, // Optionnel : pour une ombre
+                child: Container(
+                  width: 100, // Définissez la largeur du Card
+                  height: 100, // Définissez la hauteur du Card
+                  child: Center(
+                    child: IconButton(
+                      icon: Icon(Icons.camera_alt, color: Colors.black54),
+                      onPressed: _takePhoto,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 20),
+          //  _buildPhotoGrid(),
+          Center(
+            child: Wrap(
+              spacing: 8.0,
+              runSpacing: 8.0,
+              children: _buildPhotoWidgets(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class profs extends StatefulWidget {
+  const profs({super.key});
+
+  @override
+  State<profs> createState() => _profsState();
+}
+
+class _profsState extends State<profs> {
+  final _profSearchController = TextEditingController();
+  final _newProfNameController = TextEditingController();
+  final _newProfEmailController = TextEditingController();
+
+  List<UserModel> _availableProfs = [];
+  List<UserModel> _filteredProfs = [];
+  List<UserModel> _selectedProfs = [];
+  bool _isLoading = true;
+  bool _showAddProfForm = false;
+  bool _showAllPhotos = false;
+  // Variables à ajouter dans votre classe State
+  String _selectedRole = 'professeur'; // Valeur par défaut
+  final List<String> _roles = [
+    'professeur',
+    'coach',
+    'entraineur',
+    'instructeur',
+    'moniteur',
+  ];
+  @override
+  void initState() {
+    super.initState();
+    // _resetState();
+    _loadProfsList();
+    _profSearchController.addListener(filterProfs);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<ProfProvider>(
+        context,
+        listen: false,
+      ).fetchProfessorsFromFirestore();
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final stepProvider = Provider.of<StepProvider1>(context);
+    if (stepProvider.profs != null && _selectedProfs != stepProvider.profs) {
+      setState(() {
+        _selectedProfs = List<UserModel>.from(stepProvider.profs!);
+      });
+    }
+  }
+
+  void _resetState() {
+    _profSearchController.clear();
+    _newProfNameController.clear();
+    _newProfEmailController.clear();
+    _availableProfs = [];
+    _filteredProfs = [];
+    _selectedProfs = [];
+    _isLoading = true;
+    _showAddProfForm = false;
+    _showAllPhotos = false;
+  }
+
+  @override
+  void dispose() {
+    _profSearchController.dispose();
+    _newProfNameController.dispose();
+    _newProfEmailController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadProfsList() async {
+    setState(() => _isLoading = true);
+
+    try {
+      // // Récupérer les clubs
+      // final clubsQuery = FirebaseFirestore.instance
+      //     .collection('userModel')
+      //     .where('role', isEqualTo: 'club');
+      //
+      // Liste des rôles de professeur
+      List<String> professeurRoles = [
+        'professeur',
+        'prof',
+        'enseignant suppléant',
+        'conseiller pédagogique',
+        'éducateur',
+        'formateur',
+        'coach',
+        'animateur',
+        'moniteur',
+        'intervenant extérieur',
+        'médiateur',
+        'tuteur',
+      ];
+
+      // Récupérer les professeurs
+      List<UserModel> profs = [];
+      for (String role in professeurRoles) {
+        final profsQuery = firestore.FirebaseFirestore.instance
+            .collection('userModel')
+            .where('role', isEqualTo: role);
+
+        final profsSnapshot = await profsQuery.get();
+        profs.addAll(
+          profsSnapshot.docs
+              .map((doc) => UserModel.fromMap(doc.data(), doc.id))
+              .toList(),
+        );
+      }
+
+      // // Récupérer les clubs
+      // final clubsSnapshot = await clubsQuery.get();
+      // final clubs =
+      //     clubsSnapshot.docs
+      //         .map((doc) => UserModel.fromMap(doc.data(), doc.id))
+      //         .toList();
+
+      setState(() {
+        _availableProfs = profs;
+        _filteredProfs = profs;
+        //  _selectedClub = clubs.isNotEmpty ? clubs.first : null;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur de chargement: ${e.toString()}')),
+      );
+      debugPrint('Erreur lors du chargement des données: $e');
+    }
+  }
+
+  Future<void> _addNewProf() async {
+    final name = _newProfNameController.text.trim();
+    final email = _newProfEmailController.text.trim();
+    final role = _selectedRole;
+
+    if (name.isEmpty || email.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Veuillez remplir tous les champs')),
+      );
+      return;
+    }
+
+    try {
+      //  setState(() => _isLoading = true);
+      final profId = Uuid().v4();
+
+      final newProf = UserModel(
+        id: profId,
+        name: name,
+        email: email,
+        role: role,
+        createdAt: DateTime.now(),
+        lastLogin: DateTime.now(),
+        editedAt: DateTime.now(),
+        photos: [],
+      );
+
+      await firestore.FirebaseFirestore.instance
+          .collection('userModel')
+          .doc(profId)
+          .set(newProf.toMap());
+
+      Provider.of<ProfProvider>(context, listen: false).addProfessor(newProf);
+
+      setState(() {
+        _selectedProfs.add(
+          newProf,
+        ); // Add the new professor to the _selectedProfs list
+        // _profIds.add(newProf.id);
+        _newProfNameController.clear();
+        _newProfEmailController.clear();
+        _showAddProfForm = false;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur lors de la création: ${e.toString()}')),
+      );
+      debugPrint('Erreur création Coach/Professeur: $e');
+    }
+  }
+
+  void _toggleProfSelection(UserModel prof) {
+    setState(() {
+      if (_selectedProfs.contains(prof)) {
+        _selectedProfs.remove(prof);
+      } else {
+        _selectedProfs.add(prof);
+      }
+      Provider.of<StepProvider1>(
+        context,
+        listen: false,
+      ).updateProfs(_selectedProfs);
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      children: [
-        SizedBox(height: 20),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Card(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(
-                  10.0,
-                ), // Optionnel : pour des coins arrondis
-              ),
-              elevation: 4, // Optionnel : pour une ombre
-              child: Container(
-                width: 100, // Définissez la largeur du Card
-                height: 100, // Définissez la hauteur du Card
-                child: Center(
-                  child: IconButton(
-                    icon: Icon(Icons.image, color: Colors.black54, size: 50),
-                    onPressed: _pickImages,
-                  ),
-                ),
-              ),
+    return Padding(
+      padding: const EdgeInsets.all(18.0),
+      child: ListView(
+        children: [
+          TextField(
+            controller: _profSearchController,
+            onChanged: (value) => filterProfsWithDebounce(), // Avec debounce
+            // ou
+            //  onChanged: (value) => filterProfs(), // Version directe
+            decoration: InputDecoration(
+              hintText: 'Rechercher par nom, email, rôle ou initiales...',
+              prefixIcon: Icon(Icons.search),
             ),
-            SizedBox(width: 20),
-            Card(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(
-                  10.0,
-                ), // Optionnel : pour des coins arrondis
-              ),
-              elevation: 4, // Optionnel : pour une ombre
-              child: Container(
-                width: 100, // Définissez la largeur du Card
-                height: 100, // Définissez la hauteur du Card
-                child: Center(
-                  child: IconButton(
-                    icon: Icon(Icons.camera_alt, color: Colors.black54),
-                    onPressed: _takePhoto,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-        SizedBox(height: 20),
-        Center(
-          child: Wrap(
-            spacing: 8.0,
-            runSpacing: 8.0,
-            children: _buildPhotoWidgets(),
           ),
-        ),
-      ],
+          TextButton(
+            onPressed:
+                () => setState(() => _showAddProfForm = !_showAddProfForm),
+            child: Center(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(_showAddProfForm ? Icons.remove : Icons.add, size: 20),
+                  SizedBox(width: 8),
+                  Text(
+                    _showAddProfForm
+                        ? 'Masquer le formulaire'
+                        : 'Ajouter un nouveau Coach',
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (_showAddProfForm) ...[
+            SizedBox(height: 16),
+            TextFormField(
+              controller: _newProfNameController,
+              decoration: InputDecoration(
+                labelText: 'Nom du Coach/Professeur*',
+                border: OutlineInputBorder(),
+              ),
+              validator:
+                  (value) =>
+                      value?.isEmpty ?? true
+                          ? 'Ce champ est obligatoire'
+                          : null,
+            ),
+            SizedBox(height: 8),
+            TextFormField(
+              controller: _newProfEmailController,
+              decoration: InputDecoration(
+                labelText: 'Email du Coach/Professeur*',
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.emailAddress,
+              validator:
+                  (value) =>
+                      value?.isEmpty ?? true
+                          ? 'Ce champ est obligatoire'
+                          : null,
+            ),
+            SizedBox(height: 8),
+            SizedBox(height: 12),
+
+            // Dropdown pour le rôle
+            DropdownButtonFormField<String>(
+              value: _selectedRole,
+              decoration: InputDecoration(
+                labelText: 'Rôle',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.work),
+              ),
+              items:
+                  _roles.map((String role) {
+                    return DropdownMenuItem<String>(
+                      value: role,
+                      child: Text(
+                        role.substring(0, 1).toUpperCase() + role.substring(1),
+                      ),
+                    );
+                  }).toList(),
+              onChanged: (String? newValue) {
+                setState(() {
+                  _selectedRole = newValue!;
+                });
+              },
+            ),
+            SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _addNewProf,
+              child: Text(
+                'Enregistrer & Selectionner\nCoach/Professeur',
+                textAlign: TextAlign.center,
+              ),
+              style: ElevatedButton.styleFrom(
+                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              ),
+            ),
+            SizedBox(height: 16),
+          ],
+
+          // Affichage des profs filtrés
+          Consumer2<ProfProvider, StepProvider1>(
+            builder: (context, professorsProvider, stepProvider1, child) {
+              final profsToShow =
+                  _filteredProfs.isEmpty
+                      ? professorsProvider.professors
+                      : _filteredProfs;
+
+              if (profsToShow.isEmpty) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16.0),
+                  child: Text(
+                    'Aucun Coach/Professeur trouvé',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                );
+              } else {
+                return Column(
+                  children:
+                      profsToShow.take(3).map((prof) {
+                        //  final isSelected = _selectedProfs.contains(prof);
+                        // Vérifiez si le professeur est sélectionné dans stepProvider1
+                        // Utilisez stepProvider1.profs pour vérifier si le professeur est sélectionné
+                        final isSelected =
+                            stepProvider1.profs != null &&
+                            stepProvider1.profs!.any(
+                              (selectedProf) => selectedProf.id == prof.id,
+                            );
+
+                        return CheckboxListTile(
+                          title: Text(
+                            prof.role.capitalize() +
+                                ' ' +
+                                prof.name.capitalize(),
+                          ),
+                          subtitle: Text(prof.email),
+                          value: isSelected,
+                          onChanged: (_) => _toggleProfSelection(prof),
+                        );
+                      }).toList(),
+                );
+              }
+            },
+          ),
+          SizedBox(height: 20),
+          if (_selectedProfs.isNotEmpty) ...[
+            // Text(
+            //   'Coachs/Professeurs sélectionnés:',
+            //   style: TextStyle(fontWeight: FontWeight.bold),
+            // ),
+            Wrap(
+              spacing: 8,
+              children:
+                  _selectedProfs.map((prof) {
+                    return Chip(
+                      avatar:
+                          prof.logoUrl != null
+                              ? CircleAvatar(
+                                backgroundImage: CachedNetworkImageProvider(
+                                  prof.logoUrl!,
+                                ),
+                              )
+                              : CircleAvatar(child: Icon(Icons.person)),
+                      label: Text(prof.name),
+                      deleteIcon: Icon(Icons.close, size: 18),
+                      onDeleted: () => _toggleProfSelection(prof),
+                    );
+                  }).toList(),
+            ),
+            SizedBox(height: 20),
+          ],
+        ],
+      ),
     );
+  }
+
+  void filterProfsWithDebounce() {
+    // Implémentez la logique de filtrage avec debounce ici
+  }
+
+  void filterProfs() {
+    final query = _profSearchController.text.toLowerCase().trim();
+
+    setState(() {
+      if (query.isEmpty) {
+        _filteredProfs = List.from(_availableProfs);
+        return;
+      }
+
+      _filteredProfs =
+          _availableProfs.where((prof) {
+            // Recherche fuzzy - Score de pertinence
+            double score = 0.0;
+
+            final name = prof.name.toLowerCase();
+            final email = prof.email.toLowerCase();
+            final role = prof.role?.toLowerCase() ?? '';
+
+            // 1. Correspondance exacte (score maximum)
+            if (name == query || email == query || role == query) {
+              score += 100;
+            }
+
+            // 2. Commence par la requête (score élevé)
+            if (name.startsWith(query)) score += 80;
+            if (email.startsWith(query)) score += 70;
+            if (role.startsWith(query)) score += 60;
+
+            // 3. Contient la requête (score moyen)
+            if (name.contains(query)) score += 50;
+            if (email.contains(query)) score += 40;
+            if (role.contains(query)) score += 30;
+
+            // 4. Recherche par mots-clés séparés
+            final queryWords = query
+                .split(' ')
+                .where((word) => word.isNotEmpty);
+            for (String word in queryWords) {
+              if (name.contains(word)) score += 25;
+              if (email.contains(word)) score += 20;
+              if (role.contains(word)) score += 15;
+            }
+
+            // 5. Recherche floue (caractères similaires)
+            score += _calculateFuzzyScore(name, query) * 10;
+            score += _calculateFuzzyScore(email, query) * 8;
+
+            // 6. Recherche par initiales
+            if (_matchesInitials(name, query)) score += 35;
+
+            return score > 0;
+          }).toList();
+
+      // Trier par pertinence (optionnel - nécessite de stocker le score)
+      _sortByRelevance(query);
+    });
+  }
+
+  // Calcul du score de similarité floue (Levenshtein distance simplifiée)
+  double _calculateFuzzyScore(String text, String query) {
+    if (text.length < query.length) return 0.0;
+
+    int matches = 0;
+    int queryIndex = 0;
+
+    for (int i = 0; i < text.length && queryIndex < query.length; i++) {
+      if (text[i] == query[queryIndex]) {
+        matches++;
+        queryIndex++;
+      }
+    }
+
+    return matches / query.length;
+  }
+
+  // Vérification des initiales (ex: "jd" pour "Jean Dupont")
+  bool _matchesInitials(String name, String query) {
+    final nameParts = name.split(' ');
+    if (nameParts.length < 2 || query.length < 2) return false;
+
+    final initials = nameParts
+        .map((part) => part.isNotEmpty ? part[0] : '')
+        .join('');
+    return initials.toLowerCase().startsWith(query);
+  }
+
+  // Tri par pertinence (version avancée)
+  void _sortByRelevance(String query) {
+    _filteredProfs.sort((a, b) {
+      double scoreA = _calculateRelevanceScore(a, query);
+      double scoreB = _calculateRelevanceScore(b, query);
+      return scoreB.compareTo(scoreA); // Tri décroissant
+    });
+  }
+
+  // Calcul détaillé du score de pertinence
+  double _calculateRelevanceScore(UserModel prof, String query) {
+    double score = 0.0;
+
+    final name = prof.name.toLowerCase();
+    final email = prof.email.toLowerCase();
+    final role = prof.role?.toLowerCase() ?? '';
+
+    // Pondération selon l'importance du champ
+    if (name.startsWith(query))
+      score += 100;
+    else if (name.contains(query))
+      score += 60;
+
+    if (email.startsWith(query))
+      score += 80;
+    else if (email.contains(query))
+      score += 40;
+
+    if (role.startsWith(query))
+      score += 70;
+    else if (role.contains(query))
+      score += 30;
+
+    // Bonus pour les correspondances courtes (plus précises)
+    if (name.length <= query.length + 3 && name.contains(query)) score += 20;
+
+    // Bonus pour les initiales
+    if (_matchesInitials(name, query)) score += 25;
+
+    // Score fuzzy
+    score += _calculateFuzzyScore(name, query) * 15;
+
+    return score;
+  }
+
+  // Méthode pour recherche avancée avec filtres multiples
+  void advancedFilterProfs({
+    String? nameQuery,
+    String? emailQuery,
+    String? roleFilter,
+    DateTime? createdAfter,
+    DateTime? createdBefore,
+  }) {
+    setState(() {
+      _filteredProfs =
+          _availableProfs.where((prof) {
+            // Filtre par nom
+            if (nameQuery != null && nameQuery.isNotEmpty) {
+              if (!prof.name.toLowerCase().contains(nameQuery.toLowerCase())) {
+                return false;
+              }
+            }
+
+            // Filtre par email
+            if (emailQuery != null && emailQuery.isNotEmpty) {
+              if (!prof.email.toLowerCase().contains(
+                emailQuery.toLowerCase(),
+              )) {
+                return false;
+              }
+            }
+
+            // Filtre par rôle
+            if (roleFilter != null &&
+                roleFilter.isNotEmpty &&
+                roleFilter != 'Tous') {
+              if (prof.role?.toLowerCase() != roleFilter.toLowerCase()) {
+                return false;
+              }
+            }
+
+            // Filtre par date de création
+            if (createdAfter != null) {
+              if (prof.createdAt!.isBefore(createdAfter)) {
+                return false;
+              }
+            }
+
+            if (createdBefore != null) {
+              if (prof.createdAt!.isAfter(createdBefore)) {
+                return false;
+              }
+            }
+
+            return true;
+          }).toList();
+
+      // Trier par pertinence si une recherche textuelle est active
+      if (nameQuery?.isNotEmpty == true) {
+        _sortByRelevance(nameQuery!);
+      }
+    });
   }
 }
 
@@ -1026,3 +1760,8 @@ extension StringExtension on String {
     return "${this[0].toUpperCase()}${this.substring(1)}";
   }
 }
+
+// Provider.of<StepProvider1>(
+// context,
+// listen: false,
+// ).updatePhotos(_photos);

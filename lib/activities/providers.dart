@@ -349,6 +349,44 @@ class CourseProvider with ChangeNotifier {
   // Add other CRUD operations as needed
 }
 
+// class ProfProvider with ChangeNotifier {
+//   List<UserModel> _professors = [];
+//
+//   List<UserModel> get professors => _professors;
+//
+//   void addProfessor(UserModel professor) {
+//     _professors.add(professor);
+//     notifyListeners();
+//   }
+//
+//   Future<void> fetchProfessorsFromFirestore() async {
+//     try {
+//       final List<String> _roles = [
+//         'professeur',
+//         'coach',
+//         'entraineur',
+//         'instructeur',
+//         'moniteur',
+//       ];
+//
+//       final snapshot =
+//           await FirebaseFirestore.instance
+//               .collection('users')
+//               .where('role', whereIn: _roles)
+//               .get();
+//
+//       _professors =
+//           snapshot.docs.map((doc) {
+//             final data = doc.data();
+//             return UserModel.fromMap(data, doc.id);
+//           }).toList();
+//
+//       notifyListeners();
+//     } catch (e) {
+//       debugPrint('Erreur lors du fetch des professeurs : $e');
+//     }
+//   }
+// }
 class ProfProvider with ChangeNotifier {
   List<UserModel> _professors = [];
 
@@ -361,7 +399,7 @@ class ProfProvider with ChangeNotifier {
 
   Future<void> fetchProfessorsFromFirestore() async {
     try {
-      final List<String> _roles = [
+      final List<String> roles = [
         'professeur',
         'coach',
         'entraineur',
@@ -372,18 +410,24 @@ class ProfProvider with ChangeNotifier {
       final snapshot =
           await FirebaseFirestore.instance
               .collection('users')
-              .where('role', whereIn: _roles)
+              .where('role', whereIn: roles)
               .get();
 
       _professors =
           snapshot.docs.map((doc) {
             final data = doc.data();
-            return UserModel.fromMap(data, doc.id);
+            if (data != null) {
+              return UserModel.fromMap(data, doc.id);
+            } else {
+              throw Exception('Document data is null');
+            }
           }).toList();
 
       notifyListeners();
     } catch (e) {
       debugPrint('Erreur lors du fetch des professeurs : $e');
+      // Vous pouvez également notifier l'utilisateur de l'erreur ici
+      // Par exemple, en utilisant un SnackBar
     }
   }
 }
@@ -423,7 +467,8 @@ class StepProvider1 extends ChangeNotifier {
   RangeValues? _ageRange;
   osm.GeoPoint? _location;
   Map<String, double>? _prices;
-
+  List<String>? _photos;
+  List<UserModel>? _profs;
   // Getters
   int get currentStep => _currentStep;
   String? get nom => _nom;
@@ -432,6 +477,8 @@ class StepProvider1 extends ChangeNotifier {
   RangeValues? get ageRange => _ageRange;
   osm.GeoPoint? get location => _location;
   Map<String, double>? get prices => _prices;
+  List<String>? get photos => _photos;
+  List<UserModel>? get profs => _profs;
 
   void nextStep() {
     _currentStep++;
@@ -466,6 +513,11 @@ class StepProvider1 extends ChangeNotifier {
     notifyListeners();
   }
 
+  void updatePhotos(List<String> newPhotos) {
+    _photos = newPhotos;
+    notifyListeners();
+  }
+
   void updateAgeRange(RangeValues ageRange) {
     _ageRange = ageRange;
 
@@ -479,6 +531,12 @@ class StepProvider1 extends ChangeNotifier {
 
   void updatePrices(Map<String, double> prices) {
     _prices = Map<String, double>.from(prices);
+    notifyListeners();
+  }
+
+  void updateProfs(List<UserModel> newProfs) {
+    _profs = newProfs;
+    print(_profs);
     notifyListeners();
   }
 

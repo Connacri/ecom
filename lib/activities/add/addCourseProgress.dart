@@ -40,8 +40,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   List<String> _photos = [];
   // List<String> _profIds = [];
   List<String> _coachIds = [];
-  List<Schedule> _schedules = [];
+
   UserModel? _selectedClub;
+  List<Schedule> _schedules = [];
   final _profSearchController = TextEditingController();
   final _newProfNameController = TextEditingController();
   final _newProfEmailController = TextEditingController();
