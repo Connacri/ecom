@@ -12,6 +12,7 @@ import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
+import '../../arduino/VendingMachineScreen.dart';
 import '../../auth/AuthProvider.dart';
 import '../../auth/google.dart';
 import '../../fonctions/DeleteUserButton.dart';
@@ -646,6 +647,37 @@ class _ClubHomePageState extends State<_ClubHomePage> {
                     );
                   },
                   icon: Icon(Icons.add_circle_outline_rounded),
+                ),
+                SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      IconButton(
+                        onPressed: () {
+                          // Navigator.push(
+                          //   context,
+                          //   MaterialPageRoute(
+                          //     builder: (context) => RelaisWsPage(),
+                          //   ),
+                          // );
+                        },
+                        icon: Icon(Icons.card_membership_sharp),
+                      ),
+                      IconButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => VendingMachineScreen(),
+                            ),
+                          );
+                        },
+                        icon: Icon(Icons.hardware),
+                      ),
+                    ],
+                  ),
                 ),
                 SizedBox(height: 20),
                 IconButton(
