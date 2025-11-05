@@ -5,6 +5,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:lottie/lottie.dart';
 
 import '../activities/modèles.dart';
+import '../activities/screens/userHomePage.dart';
 import '../fonctions/AppLocalizations.dart';
 import '../pages/MyApp.dart';
 import 'AuthProvider.dart';
@@ -18,12 +19,15 @@ class _googleState extends State<google> {
   final AuthService _authService = AuthService();
   User? _user;
   bool isLoading = false;
-  List<Map<String, dynamic>> _reportedNumbers = [];
-  bool hasMore = true;
-  int currentPage = 0;
-  final int pageSize = 10; // Nombre de résultats par page
   bool isSigningOut = false;
-  // String? roleChoice;
+  int _selectedTab = 0; // ✅ déplacé ici
+  bool _loading = false; // ✅ déplacé ici
+  List<Map<String, dynamic>> _reportedNumbers = [];
+
+  final emailCtrl = TextEditingController();
+  final passCtrl = TextEditingController();
+  final nameCtrl = TextEditingController();
+
   @override
   void initState() {
     super.initState();
@@ -31,72 +35,10 @@ class _googleState extends State<google> {
     _setupAuthListener();
   }
 
-  // Future<void> _handleSignIn(/*String? role*/) async {
-  //   // if (role!.isEmpty) {
-  //   //   ScaffoldMessenger.of(
-  //   //     context,
-  //   //   ).showSnackBar(SnackBar(content: Text('Please select a role')));
-  //   //   return;
-  //   // }
-  //
-  //   setState(() => isLoading = true);
-  //
-  //   try {
-  //     User? user = await _authService.signInWithGoogle();
-  //
-  //     if (user != null) {
-  //       final uid = user.uid;
-  //       final docRef = FirebaseFirestore.instance
-  //           .collection('userModel')
-  //           .doc(uid);
-  //       final docSnapshot = await docRef.get();
-  //
-  //       final userData = {
-  //         'name': user.displayName ?? 'New User',
-  //         'email': user.email ?? '',
-  //         'photos': user.photoURL != null ? [user.photoURL!] : [],
-  //         'role': 'role',
-  //         'lastLogin': FieldValue.serverTimestamp(),
-  //       };
-  //
-  //       if (!docSnapshot.exists) {
-  //         // New user - create document
-  //         await docRef.set({
-  //           ...userData,
-  //           'createdAt': FieldValue.serverTimestamp(),
-  //           'editedAt': FieldValue.serverTimestamp(),
-  //           'phone': '',
-  //           'gender': '',
-  //           'courses': [],
-  //         }, SetOptions(merge: true));
-  //       } else {
-  //         // Existing user - update last login
-  //         await docRef.update(userData);
-  //       }
-  //
-  //       if (!mounted) return;
-  //       Navigator.pushReplacement(
-  //         context,
-  //         MaterialPageRoute(builder: (ctx) => HomePage()),
-  //       );
-  //     } else {
-  //       if (!mounted) return;
-  //       // ScaffoldMessenger.of(context).showSnackBar(
-  //       //   SnackBar(content: Text('Sign in failed - no user returned')),
-  //       // );
-  //     }
-  //   } catch (e) {
-  //     if (!mounted) return;
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       SnackBar(content: Text('Error during sign in: ${e.toString()}')),
-  //     );
-  //     debugPrint('Erreur authentification: $e');
-  //   } finally {
-  //     if (mounted) {
-  //       setState(() => isLoading = false);
-  //     }
-  //   }
-  // }
+  void _switchTab(int index) {
+    setState(() => _selectedTab = index);
+  }
+
   Future<void> _handleSignIn() async {
     setState(() => isLoading = true);
     try {
@@ -113,7 +55,6 @@ class _googleState extends State<google> {
         'name': user.displayName ?? 'Utilisateur',
         'email': user.email ?? '',
         'photos': user.photoURL != null ? [user.photoURL!] : [],
-
         'lastLogin': FieldValue.serverTimestamp(),
       };
 
@@ -128,33 +69,78 @@ class _googleState extends State<google> {
           'role': 'sero',
         }, SetOptions(merge: true));
       } else {
-        await docRef.set({
-          ...data,
-          'createdAt': FieldValue.serverTimestamp(),
-          'editedAt': FieldValue.serverTimestamp(),
-          'phone': '',
-          'gender': '',
-          'courses': [],
-        }, SetOptions(merge: true));
+        await docRef.update(data);
       }
 
-      // // ➔ Rechargement explicite du provider
-      // await Provider.of<UserProvider>(
-      //   context,
-      //   listen: false,
-      // ).loadCurrentUser(uid);
-
-      // // ➔ Navigation vers HomePage
-      // Navigator.pushReplacement(
-      //   context,
-      //   MaterialPageRoute(builder: (_) => HomePage()),
-      // );
+      if (!mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => HomePage()),
+      );
     } catch (e) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Erreur de connexion : $e')));
     } finally {
       if (mounted) setState(() => isLoading = false);
+    }
+  }
+
+  Future<void> _handleEmailSignIn() async {
+    setState(() => _loading = true);
+    try {
+      await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: emailCtrl.text.trim(),
+        password: passCtrl.text.trim(),
+      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Connexion réussie')));
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Erreur: $e')));
+    } finally {
+      setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _handleSignUp() async {
+    setState(() => _loading = true);
+    try {
+      final userCredential = await FirebaseAuth.instance
+          .createUserWithEmailAndPassword(
+            email: emailCtrl.text.trim(),
+            password: passCtrl.text.trim(),
+          );
+      await userCredential.user?.updateDisplayName(nameCtrl.text.trim());
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Compte créé avec succès !')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Erreur: $e')));
+    } finally {
+      setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _resetPassword() async {
+    setState(() => _loading = true);
+    try {
+      await FirebaseAuth.instance.sendPasswordResetEmail(
+        email: emailCtrl.text.trim(),
+      );
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Email de réinitialisation envoyé !')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Erreur: $e')));
+    } finally {
+      setState(() => _loading = false);
     }
   }
 
@@ -197,85 +183,175 @@ class _googleState extends State<google> {
             isLoading
                 ? CircularProgressIndicator()
                 : _user == null
-                ? _buildLoginUI()
+                ? _buildLoginUI(context)
                 : _buildProfileUI(), //HomeScreenAct(),
         //_buildProfileUI(),
       ),
     );
   }
 
-  Widget _buildLoginUI() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(0.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              // color: Colors.deepPurple,
-              child: Lottie.asset(
+  // ✅ UI Login corrigée
+  Widget _buildLoginUI(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return SingleChildScrollView(
+      child: Card(
+        margin: const EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        elevation: 8,
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Lottie.asset(
                 'assets/lotties/boost (10).json',
-                // height: 200,
-                // width: 200,
-                fit: BoxFit.cover,
+                height: 250,
+                fit: BoxFit.contain,
               ),
-            ),
-            //SizedBox(height: 20),
-            AppLocalizations.of(context).locale.languageCode != 'ar'
-                ? Flexible(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(18, 0, 18, 50),
-
-                    child: Text(
-                      'En Utilisant votre compte google tu pourra t\'authentifier' //\n\nqui je suis ?!'
-                          .toUpperCase(),
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Colors.black45,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                )
-                : Flexible(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(18, 0, 18, 0),
-                    child: Text(
-                      '${AppLocalizations.of(context).translate('usingGoogleToReport')}'
-                          .toUpperCase(),
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Colors.black45,
-                        fontSize: 25,
-                        fontWeight: FontWeight.w500,
-                        fontFamily: 'ArbFONTS',
-                      ),
-                    ),
+              const SizedBox(height: 20),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 10,
+                ),
+                child: Text(
+                  "Connectez-vous pour accéder à votre espace".toUpperCase(),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Colors.black45,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
+              ),
+              ToggleButtons(
+                isSelected: [
+                  _selectedTab == 0,
+                  _selectedTab == 1,
+                  _selectedTab == 2,
+                ],
+                onPressed: _switchTab,
+                borderRadius: BorderRadius.circular(12),
+                selectedColor: theme.colorScheme.onPrimary,
+                fillColor: theme.primaryColor,
+                children: const [
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    child: Text('Connexion'),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    child: Text('Inscription'),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    child: Text('Oublié'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
 
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.black54,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(15),
+              if (_selectedTab == 0) ...[
+                TextField(
+                  controller: emailCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Email',
+                    prefixIcon: Icon(Icons.email),
+                  ),
                 ),
-                elevation: 4.0,
-                minimumSize: const Size.fromHeight(50),
-              ),
-              icon: Icon(FontAwesomeIcons.google, color: Colors.red),
-              label: const Text(
-                'Google',
-                style: TextStyle(fontSize: 24, color: Colors.white),
-              ),
-              onPressed:
-                  //roleChoice != null ?
-                  () => _handleSignIn(/*roleChoice!*/),
-              //: null,
-            ),
-            SizedBox(height: 70),
-          ],
+                const SizedBox(height: 10),
+                TextField(
+                  controller: passCtrl,
+                  obscureText: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Mot de passe',
+                    prefixIcon: Icon(Icons.lock),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: _loading ? null : _handleEmailSignIn,
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(50),
+                  ),
+                  child: Text(_loading ? 'Connexion...' : 'Connexion'),
+                ),
+                const SizedBox(height: 20),
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.black54,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    elevation: 4.0,
+                    minimumSize: const Size.fromHeight(50),
+                  ),
+                  icon: const Icon(FontAwesomeIcons.google, color: Colors.red),
+                  label: const Text(
+                    'Google',
+                    style: TextStyle(fontSize: 20, color: Colors.white),
+                  ),
+                  onPressed: _handleSignIn,
+                ),
+              ] else if (_selectedTab == 1) ...[
+                TextField(
+                  controller: nameCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Nom complet',
+                    prefixIcon: Icon(Icons.person),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: emailCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Email',
+                    prefixIcon: Icon(Icons.email),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: passCtrl,
+                  obscureText: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Mot de passe',
+                    prefixIcon: Icon(Icons.lock),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: _loading ? null : _handleSignUp,
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(50),
+                  ),
+                  child: Text(_loading ? 'Création...' : 'Créer un compte'),
+                ),
+              ] else ...[
+                TextField(
+                  controller: emailCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Email',
+                    prefixIcon: Icon(Icons.email_outlined),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: _loading ? null : _resetPassword,
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(50),
+                  ),
+                  child: Text(
+                    _loading
+                        ? 'Envoi...'
+                        : 'Envoyer le lien de réinitialisation',
+                  ),
+                ),
+              ],
+
+              const SizedBox(height: 40),
+            ],
+          ),
         ),
       ),
     );

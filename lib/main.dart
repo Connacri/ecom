@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
@@ -16,76 +17,57 @@ import 'ads_provider.dart';
 import 'firebase_options.dart';
 import 'pages/MyApp.dart';
 
-// Global navigator key for navigation operations from anywhere
+// 🌐 Global navigator key for navigation operations from anywhere
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 Future<void> main() async {
-  // Ensure Flutter bindings are initialized
   WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
-
-  // Preserve the splash screen until initialization completes
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
 
-  // Setup background message handling
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-
-  // Initialize Firebase
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  // Initialize date formatting and timeago localization
   await initializeDateFormatting('fr_FR', null);
   timeago.setLocaleMessages('fr', timeago.FrMessages());
   timeago.setLocaleMessages('fr_short', timeago.FrShortMessages());
 
-  // Initialize localization
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  ///🟩 Initialiser Firebase seulement si la plateforme le supporte
+  if (Platform.isAndroid || Platform.isIOS || kIsWeb) {
+    // ✅ App Check uniquement sur plateformes supportées
+    await FirebaseAppCheck.instance.activate(
+      androidProvider: AndroidProvider.playIntegrity,
+      appleProvider: AppleProvider.deviceCheck,
+    );
+
+    // ✅ Firebase Messaging (pas dispo sur Windows)
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
+    // ✅ Google Mobile Ads
+    await MobileAds.instance.initialize();
+  } else {
+    debugPrint(
+      '⚠️ Firebase & Google services désactivés sur Desktop (${Platform.operatingSystem})',
+    );
+  }
+
+  // 🌐 Locale
   final localizationModel = LocalizationModel();
   await localizationModel.initLocale();
 
-  // Initialize AdMob for supported platforms
-  if (Platform.isAndroid || Platform.isIOS) {
-    await MobileAds.instance.initialize();
-  } else {
-    print("Google Mobile Ads not supported on this platform");
-  }
-
-  // Activate Firebase App Check
-  await FirebaseAppCheck.instance.activate(
-    androidProvider: AndroidProvider.playIntegrity,
-    appleProvider: AppleProvider.appAttest,
-  );
-
-  // Remove splash screen
   FlutterNativeSplash.remove();
 
-  // Run the app
   runApp(
     MultiProvider(
       providers: [
-        //ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
-        ChangeNotifierProvider(create: (_) => LocalizationModel()),
+        ChangeNotifierProvider(create: (_) => localizationModel),
         ChangeNotifierProvider(create: (_) => AdsProvider()),
         ChangeNotifierProvider(create: (_) => ChildProvider()),
-        //ChangeNotifierProvider(create: (_) => ClubProvider()),
         ChangeNotifierProvider(create: (_) => UserProvider()),
         ChangeNotifierProvider(create: (_) => CourseProvider()),
         ChangeNotifierProvider(create: (_) => ProfProvider()),
-        ChangeNotifierProvider<PhotoProvider>(create: (_) => PhotoProvider()),
+        ChangeNotifierProvider(create: (_) => PhotoProvider()),
         ChangeNotifierProvider(create: (_) => StepProvider()),
         ChangeNotifierProvider(create: (_) => StepProvider1()),
-        // ChangeNotifierProvider(create: (_) => AuthService()),
-        // ChangeNotifierProxyProvider<AuthService, ProfileProvider>(
-        //   create: (ctx) => ProfileProvider(auth: ctx.read<AuthService>()),
-        //   update: (ctx, auth, previous) {
-        //     final provider = previous ?? ProfileProvider(auth: auth);
-        //     // Réinitialiser quand l'utilisateur change ou se déconnecte
-        //     if (auth.user?.uid != provider.user?.id) {
-        //       provider.updateAuth(auth); // Doit gérer la réinitialisation
-        //
-        //       // provider.clearUser();
-        //     }
-        //     return provider;
-        //   },
-        // ),
       ],
       child: MyApp1(),
     ),
@@ -95,5 +77,5 @@ Future<void> main() async {
 // Background message handler for Firebase Cloud Messaging
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
-  print("Background message received: ${message.messageId}");
+  debugPrint("📩 Background message received: ${message.messageId}");
 }

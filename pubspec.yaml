@@ -12,67 +12,59 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  cloud_firestore: ^5.6.6
-  firebase_messaging: ^15.2.5
-  firebase_database: ^11.3.5
-  firebase_core: ^3.13.0
-  firebase_auth: ^5.5.2
+  cloud_firestore: ^6.0.0
+  firebase_messaging: ^16.0.0
+  firebase_database: ^12.0.0
+  firebase_core: ^4.0.0
+  firebase_auth: ^6.0.0
   firebase_storage: any
-  firebase_in_app_messaging: ^0.8.1+5
+  firebase_in_app_messaging: ^0.9.0
   firebase_analytics: any
-  google_sign_in: ^6.3.0
+  google_sign_in: ^7.1.1
   cached_network_image: ^3.4.1
-  supabase_flutter: ^2.8.4
+  supabase_flutter: ^2.9.1
   lottie: ^3.3.1
-  provider: ^6.1.4
+  provider: ^6.1.5
   font_awesome_flutter: ^10.8.0
   shared_preferences: ^2.5.3
   avatar_glow: ^3.0.1
-  url_launcher: ^6.3.1
-  intl: ^0.19.0
+  url_launcher: ^6.3.2
+  intl: ^0.20.2
   shimmer: ^3.0.0
-  geocoding: ^3.0.0
-  map_launcher: ^3.5.0
+  geocoding: ^4.0.0
+  map_launcher: ^4.0.0
   path: ^1.9.1
-  http: ^1.3.0
-  timeago: ^3.7.0
+  http: ^1.4.0
+  timeago: ^3.7.1
   google_mobile_ads: ^6.0.0
-  permission_handler: ^11.3.1
-  call_log: ^5.0.5
+  permission_handler: ^12.0.1
+  call_log: ^6.0.0
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
-  rename: ^3.0.2
+  rename: ^3.1.0
   animated_text_kit: ^4.2.3
   pretty_animated_text: ^2.0.0
-  flutter_localization: ^0.3.2
-  feedback: ^3.1.0
+  flutter_localization: ^0.3.3
+  feedback: ^3.2.0
   flutter_email_sender: ^7.0.0
-#  geolocator: ^14.0.0
   image_picker: ^1.1.2
-  firebase_app_check: ^0.3.2+5
+  firebase_app_check: ^0.4.0
   faker: ^2.2.0
   icons_plus: ^5.0.0
-  infinite_scroll_pagination: ^5.0.0
-  syncfusion_flutter_sliders: ^29.2.4
+  infinite_scroll_pagination: ^5.1.0
+  syncfusion_flutter_sliders: ^30.1.42
   flutter_image_compress: ^2.4.0
-  flutter_osm_plugin: ^1.3.8
+  flutter_osm_plugin: ^1.4.1
   geolocator: ^11.0.0
   osm_flutter_hooks: ^1.4.1
   webview_flutter: ^4.13.0
   open_location_picker: ^1.1.0
 
-
-
-
-
-
-
-
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_launcher_icons: ^0.14.3
+  flutter_launcher_icons: ^0.14.4
   build_runner: ^2.4.15
   flutter_native_splash: ^2.4.6
 
