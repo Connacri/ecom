@@ -92,7 +92,8 @@ Future<void> main() async {
           initialData: null,
         ),
       ],
-      child: MyApp1(), //MyAppClaude(),
+      child: MyApp1(),
+      //MyAppClaude(),
       //MyAppGpt(),
     ),
   );
