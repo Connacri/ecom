@@ -27,7 +27,7 @@ class _SignupFormState extends State<SignupForm> {
           );
       await credential.user?.updateDisplayName(_nameCtrl.text);
       await createUserInSupabase(credential.user!);
-      ScaffoldMessenger.of(context).showSnackBar(
+      await ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Compte créé avec succès !')),
       );
     } catch (e) {

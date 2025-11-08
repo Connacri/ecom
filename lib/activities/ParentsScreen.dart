@@ -44,27 +44,32 @@ class _ParentHomePageState extends State<ParentHomePage> {
     setState(() => isSigningOut = true);
 
     try {
-      // On attend que les deux futures se terminent : la déconnexion + le délai
+      await _authService.signOut();
 
-      await Future.wait([
-        _authService.signOut(),
-        Future.delayed(const Duration(seconds: 2)), // 👈 délai imposé
-      ]);
+      if (!mounted) return;
+
+      // Attendre un peu pour l'animation
+      await Future.delayed(const Duration(milliseconds: 500));
+
       Navigator.of(
         context,
-      ).pushReplacement(MaterialPageRoute(builder: (ctx) => MyApp1()));
+      ).pushReplacement(MaterialPageRoute(builder: (_) => MyApp1()));
+
       setState(() {
         _user = null;
+        // _reportedNumbers.clear();
       });
     } catch (e) {
       print('Erreur déconnexion: $e');
+      if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(AppLocalizations.of(context).translate('connexErreur')),
         ),
       );
     } finally {
-      setState(() => isSigningOut = false);
+      if (mounted) setState(() => isSigningOut = false);
     }
   }
 
@@ -122,8 +127,7 @@ class _ParentHomePageState extends State<ParentHomePage> {
                 tooltip: 'Logout',
               ),
 
-                  DeleteAccountButton(),
-
+              DeleteAccountButton(),
             ],
           ),
           body: SingleChildScrollView(

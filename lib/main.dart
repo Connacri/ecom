@@ -11,11 +11,12 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
+import '0chatgpsCourss/main.dart';
+import '0chatgpsCourss/providers/user_provider.dart';
 import 'activities/generated/multiphoto/photo_provider.dart';
 import 'activities/providers.dart';
 import 'ads_provider.dart';
 import 'firebase_options.dart';
-import 'pages/MyApp.dart';
 
 // 🌐 Global navigator key for navigation operations from anywhere
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -28,28 +29,26 @@ Future<void> main() async {
   timeago.setLocaleMessages('fr', timeago.FrMessages());
   timeago.setLocaleMessages('fr_short', timeago.FrShortMessages());
 
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-
-  ///🟩 Initialiser Firebase seulement si la plateforme le supporte
+  // ✅ N'initialiser Firebase QUE sur les plateformes supportées
   if (Platform.isAndroid || Platform.isIOS || kIsWeb) {
-    // ✅ App Check uniquement sur plateformes supportées
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+
     await FirebaseAppCheck.instance.activate(
       androidProvider: AndroidProvider.playIntegrity,
       appleProvider: AppleProvider.deviceCheck,
     );
 
-    // ✅ Firebase Messaging (pas dispo sur Windows)
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-
-    // ✅ Google Mobile Ads
     await MobileAds.instance.initialize();
   } else {
     debugPrint(
-      '⚠️ Firebase & Google services désactivés sur Desktop (${Platform.operatingSystem})',
+      '⚠️ Firebase désactivé sur Desktop (${Platform.operatingSystem})',
     );
   }
 
-  // 🌐 Locale
+  // 🌍 Locale
   final localizationModel = LocalizationModel();
   await localizationModel.initLocale();
 
@@ -68,8 +67,9 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => PhotoProvider()),
         ChangeNotifierProvider(create: (_) => StepProvider()),
         ChangeNotifierProvider(create: (_) => StepProvider1()),
+        ChangeNotifierProvider(create: (_) => UserProviderGpt()),
       ],
-      child: MyApp1(),
+      child: MyAppGpt(),
     ),
   );
 }
