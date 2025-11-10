@@ -170,7 +170,7 @@ class _PageLanceState extends State<PageLance> {
                 themeProvider.isDarkTheme ? ThemeMode.dark : ThemeMode.light,
 
             home: Scaffold(
-              body: Test(), //AuthScreen(),
+              body: test(), //AuthScreen(),
               //HomePage(),
             ),
           ),
@@ -180,13 +180,12 @@ class _PageLanceState extends State<PageLance> {
   }
 }
 
-class Test extends StatelessWidget {
-  const Test({super.key});
+class test extends StatelessWidget {
+  const test({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return google();
-    // Scaffold(appBar: AppBar(), body: Center(child: Text('test')));
+    return const Scaffold(body: Center(child: Text('reussit')));
   }
 }
 

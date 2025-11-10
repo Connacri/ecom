@@ -89,19 +89,55 @@ class _googleState extends State<google> {
   Future<void> _handleEmailSignIn() async {
     setState(() => _loading = true);
     try {
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: emailCtrl.text.trim(),
-        password: passCtrl.text.trim(),
-      );
+      final userCredential = await FirebaseAuth.instance
+          .signInWithEmailAndPassword(
+            email: emailCtrl.text.trim(),
+            password: passCtrl.text.trim(),
+          );
+      final user = userCredential.user;
+      if (user == null) return;
+
+      final uid = user.uid;
+      final docRef = FirebaseFirestore.instance
+          .collection('userModel')
+          .doc(uid);
+      final snapshot = await docRef.get();
+
+      final data = {
+        'name': user.displayName ?? 'Utilisateur',
+        'email': user.email ?? '',
+        'photos': user.photoURL != null ? [user.photoURL!] : [],
+        'lastLogin': FieldValue.serverTimestamp(),
+      };
+
+      if (!snapshot.exists) {
+        await docRef.set({
+          ...data,
+          'createdAt': FieldValue.serverTimestamp(),
+          'editedAt': FieldValue.serverTimestamp(),
+          'phone': '',
+          'gender': '',
+          'courses': [],
+          'role': 'parent',
+        }, SetOptions(merge: true));
+      } else {
+        await docRef.update(data);
+      }
+
+      if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Connexion réussie')));
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => HomePage()),
+      );
     } catch (e) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Erreur: $e')));
     } finally {
-      setState(() => _loading = false);
+      if (mounted) setState(() => _loading = false);
     }
   }
 

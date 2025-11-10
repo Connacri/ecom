@@ -135,9 +135,7 @@ class _HomePageState extends State<HomePage> {
         final userData = userSnapshot.data!.data() as Map<String, dynamic>;
         final userModel = UserModel.fromMap(userData, userSnapshot.data!.id);
         final roleBool = lesRoles.contains(userModel.role.toLowerCase());
-        print(
-          'roleBool =======================${userModel.role} ======> $roleBool',
-        );
+
         // Gérer les rôles non reconnus
         if (!lesRoles.contains(userModel.role.toLowerCase())) {
           return Scaffold(

@@ -12,50 +12,50 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  cloud_firestore: ^6.0.0
-  firebase_messaging: ^16.0.0
-  firebase_database: ^12.0.0
-  firebase_core: ^4.0.0
-  firebase_auth: ^6.0.0
+  cloud_firestore: ^6.1.0
+  firebase_messaging: ^16.0.4
+  firebase_database: ^12.0.4
+  firebase_core: ^4.2.1
+  firebase_auth: ^6.1.2
   firebase_storage: any
-  firebase_in_app_messaging: ^0.9.0
+  firebase_in_app_messaging: ^0.9.0+4
   firebase_analytics: any
-  google_sign_in: ^7.1.1
+  google_sign_in: ^7.2.0
   cached_network_image: ^3.4.1
-  supabase_flutter: ^2.9.1
-  lottie: ^3.3.1
-  provider: ^6.1.5
-  font_awesome_flutter: ^10.8.0
+  supabase_flutter: ^2.10.3
+  lottie: ^3.3.2
+  provider: ^6.1.5+1
+  font_awesome_flutter: ^10.12.0
   shared_preferences: ^2.5.3
   avatar_glow: ^3.0.1
   url_launcher: ^6.3.2
   intl: ^0.20.2
   shimmer: ^3.0.0
   geocoding: ^4.0.0
-  map_launcher: ^4.0.0
+  map_launcher: ^4.4.2
   path: ^1.9.1
-  http: ^1.4.0
+  http: ^1.5.0
   timeago: ^3.7.1
   google_mobile_ads: ^6.0.0
   permission_handler: ^12.0.1
-  call_log: ^6.0.0
+  call_log: ^6.0.1
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
   rename: ^3.1.0
-  animated_text_kit: ^4.2.3
+  animated_text_kit: ^4.3.0
   pretty_animated_text: ^2.0.0
   flutter_localization: ^0.3.3
   feedback: ^3.2.0
-  flutter_email_sender: ^7.0.0
-  image_picker: ^1.1.2
-  firebase_app_check: ^0.4.0
+  flutter_email_sender: ^8.0.0
+  image_picker: ^1.2.0
+  firebase_app_check: ^0.4.1+2
   faker: ^2.2.0
   icons_plus: ^5.0.0
-  infinite_scroll_pagination: ^5.1.0
-  syncfusion_flutter_sliders: ^30.1.42
+  infinite_scroll_pagination: ^5.1.1
+  syncfusion_flutter_sliders: ^31.2.5
   flutter_image_compress: ^2.4.0
-  flutter_osm_plugin: ^1.4.1
+  flutter_osm_plugin: ^1.4.3
   geolocator: ^11.0.0
   osm_flutter_hooks: ^1.4.1
   webview_flutter: ^4.13.0
@@ -67,8 +67,8 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_launcher_icons: ^0.14.4
-  build_runner: ^2.4.15
-  flutter_native_splash: ^2.4.6
+  build_runner: ^2.10.1
+  flutter_native_splash: ^2.4.7
 
 flutter_icons:
   android: true
